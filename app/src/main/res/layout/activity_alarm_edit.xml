@@ -68,7 +68,10 @@
                 android:id="@+id/row_mission"
                 style="@style/OptionRow">
 
-                <TextView style="@style/OptionTitle" android:text="@string/mission" />
+                <TextView
+                    style="@style/OptionTitle"
+                    android:drawableStart="@drawable/ic_mission_memory"
+                    android:text="@string/mission" />
 
                 <TextView
                     android:id="@+id/mission_value"
@@ -80,7 +83,10 @@
                 android:id="@+id/row_sound"
                 style="@style/OptionRow">
 
-                <TextView style="@style/OptionTitle" android:text="@string/sound" />
+                <TextView
+                    style="@style/OptionTitle"
+                    android:drawableStart="@drawable/ic_sound"
+                    android:text="@string/sound" />
 
                 <TextView
                     android:id="@+id/sound_value"
@@ -92,7 +98,10 @@
                 android:id="@+id/row_snooze"
                 style="@style/OptionRow">
 
-                <TextView style="@style/OptionTitle" android:text="@string/snooze" />
+                <TextView
+                    style="@style/OptionTitle"
+                    android:drawableStart="@drawable/ic_snooze"
+                    android:text="@string/snooze" />
 
                 <TextView
                     android:id="@+id/snooze_value"
@@ -104,7 +113,10 @@
                 android:id="@+id/row_output"
                 style="@style/OptionRow">
 
-                <TextView style="@style/OptionTitle" android:text="@string/output_device" />
+                <TextView
+                    style="@style/OptionTitle"
+                    android:drawableStart="@drawable/ic_headphones"
+                    android:text="@string/output_device" />
 
                 <TextView
                     android:id="@+id/output_value"
@@ -116,7 +128,10 @@
                 style="@style/OptionRow"
                 android:paddingVertical="8dp">
 
-                <TextView style="@style/OptionTitle" android:text="@string/volume" />
+                <TextView
+                    style="@style/OptionTitle"
+                    android:drawableStart="@drawable/ic_sound"
+                    android:text="@string/volume" />
 
                 <SeekBar
                     android:id="@+id/volume_slider"
