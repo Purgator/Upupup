@@ -43,10 +43,21 @@
     <string name="snooze_max">Number of snoozes</string>
     <string name="mission">Wake-up mission</string>
     <string name="mission_none">None</string>
-    <string name="mission_shake">Shake the phone</string>
-    <string name="mission_math">Solve math problems</string>
+    <string name="mission_shake">Shake</string>
+    <string name="mission_math">Math</string>
+    <string name="mission_typing">Typing</string>
+    <string name="mission_steps">Steps</string>
+    <string name="mission_memory">Memory</string>
     <string name="mission_shake_desc">Shake %1$d times</string>
     <string name="mission_math_desc">Math — %1$s</string>
+    <string name="mission_typing_desc">Type %1$d phrase(s)</string>
+    <string name="mission_steps_desc">Walk %1$d steps</string>
+    <string name="mission_memory_desc">Memory — %1$s</string>
+    <string name="mission_options">Options</string>
+    <string name="mission_pick_hint">Pick what it takes to stop the alarm</string>
+    <string name="phrase_count">Number of phrases</string>
+    <string name="steps_count">Number of steps</string>
+    <string name="steps_permission">Allow physical-activity access so your steps can be counted.</string>
     <string name="math_easy">easy</string>
     <string name="math_medium">medium</string>
     <string name="math_hard">hard</string>
@@ -65,10 +76,15 @@
     <string name="snooze_button">Snooze %1$d min</string>
     <string name="timer_done">Time\'s up!</string>
     <string name="plus_one_minute">+1 min</string>
-    <string name="shake_remaining">%1$d shakes left</string>
     <string name="shake_instruction">Shake your phone!</string>
-    <string name="math_progress">Problem %1$d of %2$d</string>
+    <string name="steps_instruction">Get up and walk!</string>
+    <string name="step_progress">%1$d of %2$d</string>
     <string name="math_wrong">Wrong, try again</string>
+    <string name="typing_instruction">Type the sentence:</string>
+    <string name="typing_hint">Type here…</string>
+    <string name="memory_watch">Watch carefully…</string>
+    <string name="memory_repeat">Your turn — repeat the sequence</string>
+    <string name="memory_wrong">Wrong — watch again</string>
     <string name="keypad_ok">OK</string>
     <string name="keypad_clear">C</string>
     <string name="snoozed_until">Snoozed until %1$s</string>
@@ -105,4 +121,16 @@
     <string name="update_error">Update failed: %1$s</string>
     <string name="update_channel">App updates</string>
     <string name="version_info">Version %1$s</string>
+
+    <!-- Typing mission phrases -->
+    <string-array name="typing_phrases">
+        <item>The early bird catches the worm</item>
+        <item>Today is a brand new day</item>
+        <item>I am awake and ready to go</item>
+        <item>No more sleep for me today</item>
+        <item>Rise and shine, it is morning</item>
+        <item>Success begins with getting up</item>
+        <item>My bed does not own me</item>
+        <item>Wake up and chase the day</item>
+    </string-array>
 </resources>
