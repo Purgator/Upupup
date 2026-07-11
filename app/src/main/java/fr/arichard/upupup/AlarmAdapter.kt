@@ -51,9 +51,34 @@ class AlarmAdapter(
                         R.string.mission_math_desc, mathLevelName(context, alarm.missionLevel)
                     )
                 )
+                Mission.TYPING -> parts.add(
+                    context.getString(R.string.mission_typing_desc, alarm.missionLevel)
+                )
+                Mission.STEPS -> parts.add(
+                    context.getString(R.string.mission_steps_desc, alarm.missionLevel)
+                )
+                Mission.MEMORY -> parts.add(
+                    context.getString(
+                        R.string.mission_memory_desc, mathLevelName(context, alarm.missionLevel)
+                    )
+                )
                 Mission.NONE -> Unit
             }
             binding.alarmDetails.text = parts.joinToString(" · ")
+
+            binding.missionIcon.visibility =
+                if (alarm.mission == Mission.NONE) android.view.View.GONE
+                else android.view.View.VISIBLE
+            binding.missionIcon.setImageResource(
+                when (alarm.mission) {
+                    Mission.SHAKE -> R.drawable.ic_mission_shake
+                    Mission.MATH -> R.drawable.ic_mission_math
+                    Mission.TYPING -> R.drawable.ic_mission_typing
+                    Mission.STEPS -> R.drawable.ic_mission_steps
+                    Mission.MEMORY -> R.drawable.ic_mission_memory
+                    Mission.NONE -> R.drawable.ic_mission_none
+                }
+            )
 
             binding.alarmEnabled.setOnCheckedChangeListener(null)
             binding.alarmEnabled.isChecked = alarm.enabled

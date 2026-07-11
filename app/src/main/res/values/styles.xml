@@ -15,6 +15,9 @@
         <item name="android:layout_height">wrap_content</item>
         <item name="android:layout_weight">1</item>
         <item name="android:textSize">16sp</item>
+        <item name="android:drawablePadding">14dp</item>
+        <item name="android:drawableTint">?attr/colorPrimary</item>
+        <item name="android:gravity">center_vertical</item>
     </style>
 
     <style name="OptionValue">

@@ -5,6 +5,7 @@
         <item name="colorOnPrimary">@color/on_primary</item>
         <item name="colorPrimaryContainer">@color/primary_container</item>
         <item name="colorOnPrimaryContainer">@color/on_primary_container</item>
+        <item name="colorSecondary">@color/secondary</item>
     </style>
 
     <!-- Ring screen: dark, edge to edge, over the lock screen. -->

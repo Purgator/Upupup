@@ -40,17 +40,23 @@
         android:orientation="vertical"
         app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
+        <!-- Fixed-height, single-line next-alarm strip -->
         <TextView
             android:id="@+id/next_alarm_banner"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="40dp"
             android:background="?attr/colorPrimaryContainer"
+            android:drawablePadding="8dp"
+            android:ellipsize="end"
             android:gravity="center"
-            android:padding="14dp"
+            android:maxLines="1"
+            android:paddingHorizontal="16dp"
             android:textColor="?attr/colorOnPrimaryContainer"
-            android:textSize="16sp"
+            android:textSize="14sp"
             android:textStyle="bold"
-            tools:text="Rings in 7h 32m" />
+            app:drawableStartCompat="@drawable/ic_alarm"
+            app:drawableTint="?attr/colorOnPrimaryContainer"
+            tools:text="Rings in 7h 32m  ·  07:30" />
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/alarm_list"
@@ -66,10 +72,14 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
+        android:alpha="0.6"
+        android:drawablePadding="16dp"
+        android:drawableTint="?attr/colorPrimary"
         android:gravity="center"
         android:text="@string/no_alarms"
         android:textSize="18sp"
-        android:visibility="gone" />
+        android:visibility="gone"
+        app:drawableTopCompat="@drawable/ic_alarm" />
 
     <!-- Timer tab -->
     <LinearLayout
@@ -182,6 +192,6 @@
         android:layout_gravity="bottom|end"
         android:layout_margin="20dp"
         android:contentDescription="@string/add_alarm"
-        app:srcCompat="@android:drawable/ic_input_add" />
+        app:srcCompat="@drawable/ic_add" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
