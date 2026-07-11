@@ -72,6 +72,15 @@ class AlarmService : Service() {
         startSound(alarm)
         if (alarm.vibrate) startVibration()
 
+        // The full-screen intent only fires when the screen is off/locked. If the user
+        // is currently *in* the app, launch the ring screen directly (allowed because
+        // one of our activities is visible; silently ignored by the system otherwise).
+        runCatching {
+            startActivity(
+                Intent(this, RingActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            )
+        }
+
         // Safety net: never ring forever. Auto-snooze (or stop) after 5 minutes.
         handler.postDelayed({ if (canSnooze(this)) snooze() else dismiss() }, AUTO_TIMEOUT_MS)
         return START_NOT_STICKY

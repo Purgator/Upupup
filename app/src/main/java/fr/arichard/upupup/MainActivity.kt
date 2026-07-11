@@ -39,6 +39,7 @@ class MainActivity : AppCompatActivity() {
 
     private val ticker = object : Runnable {
         override fun run() {
+            RingActivity.openIfRinging(this@MainActivity)
             updateNextAlarmBanner()
             updateTimerViews()
             handler.postDelayed(this, 1_000)
@@ -93,6 +94,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        RingActivity.openIfRinging(this)
         refreshAlarms()
         updateTimerViews()
         handler.post(ticker)
@@ -126,7 +128,7 @@ class MainActivity : AppCompatActivity() {
             getString(R.string.all_alarms_off)
         } else {
             getString(R.string.next_ring_in, Format.delay(this, next - now)) +
-                "\n" + Format.time(this, next)
+                "  ·  " + Format.time(this, next)
         }
     }
 
