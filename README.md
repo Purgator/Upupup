@@ -19,8 +19,11 @@ No ads, no account, no paid tier, no tracking. ~4.5 MB.
   a live preview while editing, a toast when you save, and the system alarm icon in
   the status bar.
 - **Wake-up missions** — to stop the alarm you can require:
-  - *Shake* — shake the phone 10 / 20 / 30 / 50 times
+  - *Shake* — shake the phone hard, 10 to 100 times (peak detection: lazy wiggles don't count)
   - *Math* — solve 3 problems (easy / medium / hard)
+  - *Typing* — retype 1 to 3 wake-up phrases
+  - *Steps* — get up and walk 10 to 50 steps
+  - *Memory* — repeat a Simon-style sequence of flashing tiles
 - **Full alarm setup** — repeat days, label, any alarm sound, per-alarm volume,
   gradually increasing volume, vibration, snooze duration (1–30 min) with an optional
   max snooze count.
@@ -86,7 +89,7 @@ Alarms are JSON in `SharedPreferences`.
 | `core/AlarmReceiver` | Exact-time trigger → starts the service, re-arms repeats |
 | `core/AlarmService` | Foreground service: sound, vibration, output routing, ramp, auto-snooze timeout |
 | `core/BootReceiver` | Re-arms everything after reboot / update / time change |
-| `RingActivity` | Lock-screen ringing UI + shake & math missions |
+| `RingActivity` | Lock-screen ringing UI + the five wake-up missions |
 | `core/UpdateManager` | Daily GitHub-release check, background download, self-install |
 
 ### Publishing a release
