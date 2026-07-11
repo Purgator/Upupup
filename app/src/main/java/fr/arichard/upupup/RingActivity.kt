@@ -1,10 +1,16 @@
 package fr.arichard.upupup
 
-import android.annotation.SuppressLint
+import android.app.Activity
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.graphics.Color
 import android.hardware.SensorManager
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.Gravity
+import android.view.View
 import android.view.WindowManager
 import android.widget.Button
 import android.widget.Toast
@@ -15,21 +21,36 @@ import fr.arichard.upupup.core.Format
 import fr.arichard.upupup.core.Mission
 import fr.arichard.upupup.databinding.ActivityRingBinding
 import fr.arichard.upupup.mission.MathMission
+import fr.arichard.upupup.mission.MemoryMission
 import fr.arichard.upupup.mission.ShakeDetector
+import fr.arichard.upupup.mission.StepDetector
 import java.lang.ref.WeakReference
 
 /**
- * Full-screen ringing UI, shown over the lock screen. Stopping requires completing
- * the alarm's wake-up mission (shake / math); snoozing is always one tap.
+ * Full-screen ringing UI, shown over the lock screen (or on top of the app when it is
+ * open). Stopping requires completing the alarm's wake-up mission; snoozing is always
+ * one tap.
  */
 class RingActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityRingBinding
+    private val handler = Handler(Looper.getMainLooper())
+
     private var shakeDetector: ShakeDetector? = null
-    private var shakesLeft = 0
+    private var stepDetector: StepDetector? = null
+    private var countLeft = 0
+
     private var mathSolved = 0
     private var mathAnswer = 0
     private var mathInput = StringBuilder()
+
+    private var phrases: List<String> = emptyList()
+    private var phrasesTyped = 0
+
+    private var memorySequence: List<Int> = emptyList()
+    private var memoryPosition = 0
+    private var memoryInputEnabled = false
+    private val memoryTiles = mutableListOf<Button>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -80,13 +101,16 @@ class RingActivity : AppCompatActivity() {
                 AlarmService.snooze(this)
             }
         } else {
-            binding.snoozeButton.visibility = android.view.View.GONE
+            binding.snoozeButton.visibility = View.GONE
         }
 
         when (alarm.mission) {
             Mission.NONE -> Unit
             Mission.SHAKE -> setupShake(alarm.missionLevel.coerceAtLeast(10))
             Mission.MATH -> setupMath(alarm.missionLevel.coerceIn(1, 3))
+            Mission.TYPING -> setupTyping(alarm.missionLevel.coerceIn(1, 3))
+            Mission.STEPS -> setupSteps(alarm.missionLevel.coerceAtLeast(10))
+            Mission.MEMORY -> setupMemory(alarm.missionLevel.coerceIn(1, 3))
         }
     }
 
@@ -95,43 +119,76 @@ class RingActivity : AppCompatActivity() {
         finish()
     }
 
-    // ---- Shake mission ----
-
-    private fun setupShake(count: Int) {
-        binding.stopButton.visibility = android.view.View.GONE
-        binding.shakeContainer.visibility = android.view.View.VISIBLE
-        shakesLeft = count
-        binding.shakeProgress.max = count
-        binding.shakeProgress.progress = 0
-        updateShakeUi()
-        shakeDetector = ShakeDetector {
-            if (shakesLeft <= 0) return@ShakeDetector
-            shakesLeft--
-            binding.shakeProgress.progress = binding.shakeProgress.max - shakesLeft
-            updateShakeUi()
-            if (shakesLeft == 0) stopAlarm()
-        }
+    private fun hideStopButton() {
+        binding.stopButton.visibility = View.GONE
     }
 
-    private fun updateShakeUi() {
-        binding.shakeCount.text = shakesLeft.toString()
+    // ---- Counter missions: shake & steps ----
+
+    private fun setupShake(count: Int) {
+        setupCounter(getString(R.string.shake_instruction), count)
+        shakeDetector = ShakeDetector { onCountEvent() }
+    }
+
+    private fun setupSteps(count: Int) {
+        // No permission or no sensor at ring time must never soften the alarm:
+        // fall back to the shake mission with the same count.
+        val allowed = Build.VERSION.SDK_INT < 29 || checkSelfPermission(
+            android.Manifest.permission.ACTIVITY_RECOGNITION
+        ) == PackageManager.PERMISSION_GRANTED
+        if (!allowed) {
+            setupShake(count)
+            return
+        }
+        setupCounter(getString(R.string.steps_instruction), count)
+        stepDetector = StepDetector { onCountEvent() }
+    }
+
+    private fun setupCounter(instruction: String, count: Int) {
+        hideStopButton()
+        binding.counterContainer.visibility = View.VISIBLE
+        binding.counterInstruction.text = instruction
+        countLeft = count
+        binding.counterProgress.max = count
+        binding.counterProgress.progress = 0
+        binding.counterValue.text = countLeft.toString()
+    }
+
+    private fun onCountEvent() {
+        if (countLeft <= 0) return
+        countLeft--
+        binding.counterProgress.progress = binding.counterProgress.max - countLeft
+        binding.counterValue.text = countLeft.toString()
+        if (countLeft == 0) stopAlarm()
     }
 
     override fun onResume() {
         super.onResume()
-        shakeDetector?.start(getSystemService(SensorManager::class.java))
+        val sensors = getSystemService(SensorManager::class.java)
+        shakeDetector?.start(sensors)
+        stepDetector?.let {
+            // Sensor missing on this device: swap to shake so the mission stays doable.
+            if (!it.start(sensors) && countLeft > 0) {
+                stepDetector = null
+                setupShake(countLeft)
+                shakeDetector?.start(sensors)
+            }
+        }
     }
 
     override fun onPause() {
-        shakeDetector?.stop(getSystemService(SensorManager::class.java))
+        val sensors = getSystemService(SensorManager::class.java)
+        shakeDetector?.stop(sensors)
+        stepDetector?.stop(sensors)
         super.onPause()
     }
 
     // ---- Math mission ----
 
     private fun setupMath(difficulty: Int) {
-        binding.stopButton.visibility = android.view.View.GONE
-        binding.mathContainer.visibility = android.view.View.VISIBLE
+        hideStopButton()
+        binding.mathContainer.visibility = View.VISIBLE
+        binding.missionProgress.visibility = View.VISIBLE
         buildKeypad(difficulty)
         nextProblem(difficulty)
     }
@@ -142,11 +199,10 @@ class RingActivity : AppCompatActivity() {
         mathInput.clear()
         binding.mathProblem.text = problem.text
         binding.mathAnswer.text = ""
-        binding.mathStep.text =
-            getString(R.string.math_progress, mathSolved + 1, MathMission.PROBLEM_COUNT)
+        binding.missionProgress.text =
+            getString(R.string.step_progress, mathSolved + 1, MathMission.PROBLEM_COUNT)
     }
 
-    @SuppressLint("SetTextI18n")
     private fun buildKeypad(difficulty: Int) {
         val keys = listOf("1", "2", "3", "4", "5", "6", "7", "8", "9",
             getString(R.string.keypad_clear), "0", getString(R.string.keypad_ok))
@@ -187,7 +243,108 @@ class RingActivity : AppCompatActivity() {
         binding.mathAnswer.text = mathInput.toString()
     }
 
+    // ---- Typing mission ----
+
+    private fun setupTyping(phraseCount: Int) {
+        hideStopButton()
+        binding.typingContainer.visibility = View.VISIBLE
+        binding.missionProgress.visibility = View.VISIBLE
+        phrases = resources.getStringArray(R.array.typing_phrases)
+            .toList().shuffled().take(phraseCount)
+        window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE)
+        binding.typingInput.requestFocus()
+        binding.typingInput.addTextChangedListener(object : android.text.TextWatcher {
+            override fun afterTextChanged(s: android.text.Editable) {
+                if (normalize(s.toString()) == normalize(phrases[phrasesTyped])) {
+                    phrasesTyped++
+                    if (phrasesTyped >= phrases.size) {
+                        stopAlarm()
+                    } else {
+                        s.clear()
+                        showPhrase()
+                    }
+                }
+            }
+
+            override fun beforeTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) = Unit
+            override fun onTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) = Unit
+        })
+        showPhrase()
+    }
+
+    private fun showPhrase() {
+        binding.typingPhrase.text = phrases[phrasesTyped]
+        binding.missionProgress.text =
+            getString(R.string.step_progress, phrasesTyped + 1, phrases.size)
+    }
+
+    private fun normalize(text: String): String =
+        text.trim().replace(Regex("\\s+"), " ").lowercase()
+
+    // ---- Memory mission (Simon-style) ----
+
+    private fun setupMemory(difficulty: Int) {
+        hideStopButton()
+        binding.memoryContainer.visibility = View.VISIBLE
+        memorySequence = MemoryMission.generate(difficulty)
+
+        val size = (resources.displayMetrics.density * 76).toInt()
+        val margin = (resources.displayMetrics.density * 5).toInt()
+        repeat(MemoryMission.GRID_SIZE) { index ->
+            val tile = Button(this).apply {
+                layoutParams = android.widget.GridLayout.LayoutParams().apply {
+                    width = size
+                    height = size
+                    setMargins(margin, margin, margin, margin)
+                }
+                setBackgroundColor(TILE_IDLE)
+                setOnClickListener { onTileTapped(index) }
+            }
+            memoryTiles.add(tile)
+            binding.memoryGrid.addView(tile)
+        }
+        handler.postDelayed({ playSequence() }, 800)
+    }
+
+    private fun playSequence() {
+        memoryInputEnabled = false
+        memoryPosition = 0
+        binding.memoryStatus.text = getString(R.string.memory_watch)
+        memorySequence.forEachIndexed { i, tile ->
+            handler.postDelayed({ flashTile(tile, TILE_SHOW) }, 700L * i + 400)
+        }
+        handler.postDelayed({
+            binding.memoryStatus.text = getString(R.string.memory_repeat)
+            memoryInputEnabled = true
+        }, 700L * memorySequence.size + 500)
+    }
+
+    private fun flashTile(index: Int, color: Int) {
+        memoryTiles[index].setBackgroundColor(color)
+        handler.postDelayed({ memoryTiles[index].setBackgroundColor(TILE_IDLE) }, 400)
+    }
+
+    private fun onTileTapped(index: Int) {
+        if (!memoryInputEnabled) return
+        if (index == memorySequence[memoryPosition]) {
+            flashTile(index, TILE_GOOD)
+            memoryPosition++
+            if (memoryPosition == memorySequence.size) {
+                memoryInputEnabled = false
+                stopAlarm()
+            }
+        } else {
+            memoryInputEnabled = false
+            flashTile(index, TILE_BAD)
+            binding.memoryStatus.text = getString(R.string.memory_wrong)
+            handler.postDelayed({ playSequence() }, 1_200)
+        }
+    }
+
+    // ---- Plumbing ----
+
     override fun onDestroy() {
+        handler.removeCallbacksAndMessages(null)
         if (instance?.get() === this) instance = null
         super.onDestroy()
     }
@@ -195,9 +352,29 @@ class RingActivity : AppCompatActivity() {
     companion object {
         private var instance: WeakReference<RingActivity>? = null
 
+        private val TILE_IDLE = Color.parseColor("#2E3560")
+        private val TILE_SHOW = Color.parseColor("#FF8F2E")
+        private val TILE_GOOD = Color.parseColor("#4CAF50")
+        private val TILE_BAD = Color.parseColor("#E53935")
+
+        val isOpen: Boolean get() = instance?.get() != null
+
         /** Called by [AlarmService] when ringing ends for any reason. */
         fun finishIfOpen() {
             instance?.get()?.finish()
+        }
+
+        /**
+         * Brings the ring screen up when an alarm is ringing and the user is looking
+         * at the app (the full-screen intent only fires when the screen is off/locked).
+         */
+        fun openIfRinging(activity: Activity) {
+            if (AlarmService.current != null && !isOpen) {
+                activity.startActivity(
+                    Intent(activity, RingActivity::class.java)
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                )
+            }
         }
     }
 }

@@ -5,7 +5,7 @@ import org.json.JSONObject
 import java.util.Calendar
 
 /** Wake-up mission required to stop the alarm. */
-enum class Mission { NONE, SHAKE, MATH }
+enum class Mission { NONE, SHAKE, MATH, TYPING, STEPS, MEMORY }
 
 /** Where the alarm sound is routed. */
 enum class Output { AUTO, SPEAKER, WIRED, BLUETOOTH }
