@@ -158,7 +158,9 @@ class AlarmService : Service() {
                 )
                 setDataSource(this@AlarmService, uri)
                 isLooping = true
-                preferredOutputDevice(alarm.output)?.let { setPreferredDevice(it) }
+                if (Build.VERSION.SDK_INT >= 28) {
+                    preferredOutputDevice(alarm.output)?.let { setPreferredDevice(it) }
+                }
                 if (alarm.rampUp) setVolume(RAMP_START, RAMP_START)
                 prepare()
                 start()
