@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Upupup</string>
+
+    <!-- Main screen -->
+    <string name="tab_alarms">Alarms</string>
+    <string name="tab_timer">Timer</string>
+    <string name="settings_title">Settings</string>
+    <string name="no_alarms">No alarms yet.\nTap + to create one.</string>
+    <string name="all_alarms_off">All alarms are off</string>
+    <string name="next_ring_in">Rings in %1$s</string>
+    <string name="next_ring_at">%1$s — %2$s</string>
+    <string name="add_alarm">Add alarm</string>
+    <string name="alarm_set_in">Alarm set — rings in %1$s</string>
+    <string name="duration_days">%1$dd %2$dh</string>
+    <string name="duration_hours">%1$dh %2$dm</string>
+    <string name="duration_minutes">%1$dm</string>
+    <string name="duration_less_than_minute">less than a minute</string>
+    <string name="delete_alarm">Delete</string>
+
+    <!-- Days -->
+    <string name="every_day">Every day</string>
+    <string name="weekdays">Weekdays</string>
+    <string name="weekend">Weekend</string>
+    <string name="once">Once</string>
+
+    <!-- Alarm editor -->
+    <string name="edit_alarm">Edit alarm</string>
+    <string name="new_alarm">New alarm</string>
+    <string name="label_hint">Alarm name (optional)</string>
+    <string name="repeat">Repeat</string>
+    <string name="sound">Sound</string>
+    <string name="sound_default">Default alarm sound</string>
+    <string name="volume">Volume</string>
+    <string name="ramp_up">Gradually increase volume</string>
+    <string name="vibrate">Vibration</string>
+    <string name="snooze">Snooze</string>
+    <string name="snooze_off">Off</string>
+    <string name="snooze_desc">%1$d min, %2$s</string>
+    <string name="snooze_unlimited">unlimited</string>
+    <string name="snooze_times">max %1$d</string>
+    <string name="snooze_duration">Snooze duration</string>
+    <string name="snooze_max">Number of snoozes</string>
+    <string name="mission">Wake-up mission</string>
+    <string name="mission_none">None</string>
+    <string name="mission_shake">Shake the phone</string>
+    <string name="mission_math">Solve math problems</string>
+    <string name="mission_shake_desc">Shake %1$d times</string>
+    <string name="mission_math_desc">Math — %1$s</string>
+    <string name="math_easy">easy</string>
+    <string name="math_medium">medium</string>
+    <string name="math_hard">hard</string>
+    <string name="shake_count">Number of shakes</string>
+    <string name="math_difficulty">Difficulty</string>
+    <string name="output_device">Sound output</string>
+    <string name="output_auto">Automatic</string>
+    <string name="output_speaker">Phone speaker</string>
+    <string name="output_wired">Wired headphones</string>
+    <string name="output_bluetooth">Bluetooth device</string>
+    <string name="output_not_connected">%1$s (not connected — falls back to automatic)</string>
+    <string name="save">Save</string>
+
+    <!-- Ring screen -->
+    <string name="stop_alarm">Stop</string>
+    <string name="snooze_button">Snooze %1$d min</string>
+    <string name="timer_done">Time\'s up!</string>
+    <string name="plus_one_minute">+1 min</string>
+    <string name="shake_remaining">%1$d shakes left</string>
+    <string name="shake_instruction">Shake your phone!</string>
+    <string name="math_progress">Problem %1$d of %2$d</string>
+    <string name="math_wrong">Wrong, try again</string>
+    <string name="keypad_ok">OK</string>
+    <string name="keypad_clear">C</string>
+    <string name="snoozed_until">Snoozed until %1$s</string>
+
+    <!-- Timer -->
+    <string name="timer_start">Start</string>
+    <string name="timer_cancel">Cancel</string>
+    <string name="timer_hours">hours</string>
+    <string name="timer_minutes">min</string>
+    <string name="timer_seconds">sec</string>
+    <string name="timer_running_channel">Timer</string>
+    <string name="timer_notification_title">Timer running</string>
+    <string name="timer_notification_text">Rings at %1$s</string>
+
+    <!-- Notifications -->
+    <string name="alarm_channel">Ringing alarm</string>
+    <string name="upcoming_channel">Upcoming alarm</string>
+    <string name="alarm_notification_text">Alarm ringing — tap to open</string>
+
+    <!-- Permissions -->
+    <string name="exact_alarm_needed">Upupup needs the “Alarms &amp; reminders” permission so alarms ring exactly on time.</string>
+    <string name="grant">Grant</string>
+    <string name="fullscreen_needed">Allow “Display over other apps while ringing” so the alarm can wake the screen.</string>
+
+    <!-- Settings -->
+    <string name="auto_update">Automatic updates</string>
+    <string name="auto_update_summary">Checks GitHub once a day and downloads new versions on Wi-Fi</string>
+    <string name="check_updates_now">Check for updates now</string>
+    <string name="checking">Checking…</string>
+    <string name="up_to_date">Up to date (v%1$s)</string>
+    <string name="update_ready_title">Update v%1$s ready</string>
+    <string name="update_ready_text">Tap to install</string>
+    <string name="update_deferred">Update v%1$s found — will download on Wi-Fi</string>
+    <string name="update_error">Update failed: %1$s</string>
+    <string name="update_channel">App updates</string>
+    <string name="version_info">Version %1$s</string>
+</resources>
