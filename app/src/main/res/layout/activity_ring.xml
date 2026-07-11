@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/ring_background"
+    android:background="@drawable/bg_ring"
     android:gravity="center_horizontal"
     android:orientation="vertical"
     android:padding="24dp">
@@ -12,49 +13,62 @@
         android:id="@+id/clock"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="48dp"
+        android:layout_marginTop="32dp"
         android:fontFamily="sans-serif-thin"
         android:textColor="@android:color/white"
-        android:textSize="72sp" />
+        android:textSize="68sp" />
 
     <TextView
         android:id="@+id/ring_label"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:textColor="#B0BEC5"
-        android:textSize="20sp"
+        android:layout_marginTop="4dp"
+        android:textColor="#9FA8DA"
+        android:textSize="18sp"
         tools:text="Wake up!" />
 
-    <!-- Shake mission -->
+    <!-- Shared progress line for all missions ("2 of 3") -->
+    <TextView
+        android:id="@+id/mission_progress"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:textColor="#9FA8DA"
+        android:textSize="14sp"
+        android:visibility="gone"
+        tools:text="Problem 1 of 3" />
+
+    <!-- Counter mission (shake / steps) -->
     <LinearLayout
-        android:id="@+id/shake_container"
+        android:id="@+id/counter_container"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="32dp"
+        android:layout_marginTop="8dp"
         android:gravity="center_horizontal"
         android:orientation="vertical"
         android:visibility="gone">
 
         <TextView
+            android:id="@+id/counter_instruction"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/shake_instruction"
             android:textColor="@android:color/white"
-            android:textSize="22sp" />
+            android:textSize="24sp"
+            android:textStyle="bold"
+            tools:text="Shake your phone!" />
 
         <TextView
-            android:id="@+id/shake_count"
+            android:id="@+id/counter_value"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
+            android:layout_marginTop="12dp"
             android:fontFamily="sans-serif-thin"
             android:textColor="@color/primary"
-            android:textSize="64sp"
+            android:textSize="88sp"
             tools:text="15" />
 
         <ProgressBar
-            android:id="@+id/shake_progress"
+            android:id="@+id/counter_progress"
             style="?android:attr/progressBarStyleHorizontal"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -66,18 +80,9 @@
         android:id="@+id/math_container"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
         android:gravity="center_horizontal"
         android:orientation="vertical"
         android:visibility="gone">
-
-        <TextView
-            android:id="@+id/math_step"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textColor="#B0BEC5"
-            android:textSize="14sp"
-            tools:text="Problem 1 of 3" />
 
         <TextView
             android:id="@+id/math_problem"
@@ -90,7 +95,7 @@
 
         <TextView
             android:id="@+id/math_answer"
-            android:layout_width="160dp"
+            android:layout_width="180dp"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:background="#22FFFFFF"
@@ -104,7 +109,77 @@
             android:id="@+id/keypad"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:columnCount="3" />
+    </LinearLayout>
+
+    <!-- Typing mission -->
+    <LinearLayout
+        android:id="@+id/typing_container"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:gravity="center_horizontal"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/typing_instruction"
+            android:textColor="#9FA8DA"
+            android:textSize="14sp" />
+
+        <TextView
+            android:id="@+id/typing_phrase"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
+            android:background="#22FFFFFF"
+            android:gravity="center"
+            android:padding="16dp"
+            android:textColor="@android:color/white"
+            android:textSize="20sp"
+            tools:text="The early bird catches the worm" />
+
+        <EditText
+            android:id="@+id/typing_input"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:hint="@string/typing_hint"
+            android:importantForAutofill="no"
+            android:imeOptions="actionDone"
+            android:inputType="textNoSuggestions|textVisiblePassword"
+            android:maxLines="2"
+            android:textColor="@android:color/white"
+            android:textColorHint="#66FFFFFF"
+            android:textSize="18sp" />
+    </LinearLayout>
+
+    <!-- Memory mission (Simon-style 3×3 grid) -->
+    <LinearLayout
+        android:id="@+id/memory_container"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:gravity="center_horizontal"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/memory_status"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/memory_watch"
+            android:textColor="@android:color/white"
+            android:textSize="18sp" />
+
+        <GridLayout
+            android:id="@+id/memory_grid"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
             android:columnCount="3" />
     </LinearLayout>
 
@@ -116,16 +191,17 @@
     <com.google.android.material.button.MaterialButton
         android:id="@+id/stop_button"
         android:layout_width="match_parent"
-        android:layout_height="72dp"
+        android:layout_height="68dp"
         android:text="@string/stop_alarm"
-        android:textSize="22sp" />
+        android:textSize="22sp"
+        app:cornerRadius="34dp" />
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/snooze_button"
         style="@style/Widget.Material3.Button.TextButton"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:textColor="#B0BEC5"
+        android:layout_marginTop="4dp"
+        android:textColor="#9FA8DA"
         tools:text="Snooze 5 min" />
 </LinearLayout>
