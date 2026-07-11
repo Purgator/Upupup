@@ -48,6 +48,11 @@ class AlarmEditActivity : AppCompatActivity() {
             }
         }
 
+    override fun onResume() {
+        super.onResume()
+        RingActivity.openIfRinging(this)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityAlarmEditBinding.inflate(layoutInflater)
@@ -160,52 +165,151 @@ class AlarmEditActivity : AppCompatActivity() {
         }
     }
 
-    // ---- Option dialogs ----
+    // ---- Mission picker (bottom sheet with illustrated cards) ----
+
+    private data class MissionChoice(val mission: Mission, val icon: Int, val label: Int)
+
+    private val missionChoices = listOf(
+        MissionChoice(Mission.NONE, R.drawable.ic_mission_none, R.string.mission_none),
+        MissionChoice(Mission.SHAKE, R.drawable.ic_mission_shake, R.string.mission_shake),
+        MissionChoice(Mission.MATH, R.drawable.ic_mission_math, R.string.mission_math),
+        MissionChoice(Mission.TYPING, R.drawable.ic_mission_typing, R.string.mission_typing),
+        MissionChoice(Mission.STEPS, R.drawable.ic_mission_steps, R.string.mission_steps),
+        MissionChoice(Mission.MEMORY, R.drawable.ic_mission_memory, R.string.mission_memory),
+    )
+
+    /** Selectable difficulty/amount per mission: value → chip label. */
+    private fun levelsFor(mission: Mission): List<Pair<Int, String>> = when (mission) {
+        Mission.NONE -> emptyList()
+        Mission.SHAKE -> listOf(10, 20, 30, 50, 100).map { it to "$it" }
+        Mission.STEPS -> listOf(10, 20, 30, 50).map { it to "$it" }
+        Mission.TYPING -> listOf(1, 2, 3).map { it to "$it" }
+        Mission.MATH, Mission.MEMORY -> listOf(
+            1 to getString(R.string.math_easy),
+            2 to getString(R.string.math_medium),
+            3 to getString(R.string.math_hard),
+        )
+    }
+
+    private fun defaultLevelFor(mission: Mission): Int = when (mission) {
+        Mission.NONE -> 0
+        Mission.SHAKE -> 30
+        Mission.STEPS -> 20
+        Mission.TYPING -> 1
+        Mission.MATH, Mission.MEMORY -> 2
+    }
 
     private fun pickMission() {
-        val options = arrayOf(
-            getString(R.string.mission_none),
-            getString(R.string.mission_shake),
-            getString(R.string.mission_math),
-        )
-        MaterialAlertDialogBuilder(this)
-            .setTitle(R.string.mission)
-            .setItems(options) { _, which ->
-                when (which) {
-                    0 -> {
-                        draft = draft.copy(mission = Mission.NONE, missionLevel = 0)
-                        updateValues()
-                    }
-                    1 -> pickShakeCount()
-                    2 -> pickMathDifficulty()
+        val dialog = com.google.android.material.bottomsheet.BottomSheetDialog(this)
+        val sheet = fr.arichard.upupup.databinding.DialogMissionPickerBinding
+            .inflate(layoutInflater)
+        dialog.setContentView(sheet.root)
+
+        var selected = draft.mission
+        var level = if (draft.missionLevel > 0) draft.missionLevel else defaultLevelFor(selected)
+        val cards = mutableListOf<com.google.android.material.card.MaterialCardView>()
+
+        fun refreshCards() {
+            cards.forEachIndexed { i, card ->
+                val active = missionChoices[i].mission == selected
+                card.strokeWidth = (resources.displayMetrics.density * if (active) 2 else 0).toInt()
+                card.strokeColor = getColor(R.color.primary)
+                card.isChecked = active
+            }
+        }
+
+        fun refreshLevels() {
+            val levels = levelsFor(selected)
+            sheet.optionsTitle.visibility =
+                if (levels.isEmpty()) android.view.View.GONE else android.view.View.VISIBLE
+            sheet.levelChips.visibility = sheet.optionsTitle.visibility
+            sheet.levelChips.removeAllViews()
+            levels.forEach { (value, label) ->
+                val chip = com.google.android.material.chip.Chip(
+                    this, null,
+                    com.google.android.material.R.attr.chipStyle
+                ).apply {
+                    id = android.view.View.generateViewId() // single-selection needs real ids
+                    text = label
+                    isCheckable = true
+                    isChecked = value == level
+                    setOnClickListener { level = value }
+                }
+                sheet.levelChips.addView(chip)
+            }
+        }
+
+        val density = resources.displayMetrics.density
+        missionChoices.forEachIndexed { index, choice ->
+            val card = com.google.android.material.card.MaterialCardView(this).apply {
+                radius = density * 14
+                isCheckable = true
+                layoutParams = android.widget.GridLayout.LayoutParams(
+                    android.widget.GridLayout.spec(index / 3, 1f),
+                    android.widget.GridLayout.spec(index % 3, 1f)
+                ).apply {
+                    width = 0
+                    setMargins((density * 4).toInt(), (density * 4).toInt(),
+                        (density * 4).toInt(), (density * 4).toInt())
                 }
             }
-            .show()
+            val cell = android.widget.LinearLayout(this).apply {
+                orientation = android.widget.LinearLayout.VERTICAL
+                gravity = android.view.Gravity.CENTER
+                setPadding(0, (density * 14).toInt(), 0, (density * 12).toInt())
+            }
+            cell.addView(android.widget.ImageView(this).apply {
+                setImageResource(choice.icon)
+                imageTintList = android.content.res.ColorStateList.valueOf(
+                    getColor(R.color.primary)
+                )
+                layoutParams = android.widget.LinearLayout.LayoutParams(
+                    (density * 34).toInt(), (density * 34).toInt()
+                )
+            })
+            cell.addView(android.widget.TextView(this).apply {
+                text = getString(choice.label)
+                textSize = 13f
+                gravity = android.view.Gravity.CENTER
+                setPadding(0, (density * 6).toInt(), 0, 0)
+            })
+            card.addView(cell)
+            card.setOnClickListener {
+                selected = choice.mission
+                level = if (draft.mission == selected && draft.missionLevel > 0) {
+                    draft.missionLevel
+                } else {
+                    defaultLevelFor(selected)
+                }
+                refreshCards()
+                refreshLevels()
+            }
+            cards.add(card)
+            sheet.missionGrid.addView(card)
+        }
+        refreshCards()
+        refreshLevels()
+
+        sheet.missionOk.setOnClickListener {
+            draft = draft.copy(mission = selected, missionLevel = level)
+            if (selected == Mission.STEPS) requestActivityRecognitionIfNeeded()
+            updateValues()
+            dialog.dismiss()
+        }
+        dialog.show()
     }
 
-    private fun pickShakeCount() {
-        val counts = intArrayOf(10, 20, 30, 50)
-        MaterialAlertDialogBuilder(this)
-            .setTitle(R.string.shake_count)
-            .setItems(counts.map { it.toString() }.toTypedArray()) { _, which ->
-                draft = draft.copy(mission = Mission.SHAKE, missionLevel = counts[which])
-                updateValues()
-            }
-            .show()
-    }
-
-    private fun pickMathDifficulty() {
-        val labels = arrayOf(
-            getString(R.string.math_easy), getString(R.string.math_medium),
-            getString(R.string.math_hard)
-        )
-        MaterialAlertDialogBuilder(this)
-            .setTitle(R.string.math_difficulty)
-            .setItems(labels) { _, which ->
-                draft = draft.copy(mission = Mission.MATH, missionLevel = which + 1)
-                updateValues()
-            }
-            .show()
+    /** The steps mission needs the activity-recognition runtime permission on Android 10+. */
+    private fun requestActivityRecognitionIfNeeded() {
+        if (Build.VERSION.SDK_INT >= 29 && checkSelfPermission(
+                android.Manifest.permission.ACTIVITY_RECOGNITION
+            ) != android.content.pm.PackageManager.PERMISSION_GRANTED
+        ) {
+            Toast.makeText(this, R.string.steps_permission, Toast.LENGTH_LONG).show()
+            androidx.core.app.ActivityCompat.requestPermissions(
+                this, arrayOf(android.Manifest.permission.ACTIVITY_RECOGNITION), 2
+            )
+        }
     }
 
     private fun pickSound() {
@@ -281,6 +385,11 @@ class AlarmEditActivity : AppCompatActivity() {
             Mission.SHAKE -> getString(R.string.mission_shake_desc, draft.missionLevel)
             Mission.MATH -> getString(
                 R.string.mission_math_desc, AlarmAdapter.mathLevelName(this, draft.missionLevel)
+            )
+            Mission.TYPING -> getString(R.string.mission_typing_desc, draft.missionLevel)
+            Mission.STEPS -> getString(R.string.mission_steps_desc, draft.missionLevel)
+            Mission.MEMORY -> getString(
+                R.string.mission_memory_desc, AlarmAdapter.mathLevelName(this, draft.missionLevel)
             )
         }
         binding.soundValue.text = soundName()
