@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.Upupup" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/primary</item>
+        <item name="colorOnPrimary">@color/on_primary</item>
+        <item name="colorPrimaryContainer">@color/primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/on_primary_container</item>
+    </style>
+
+    <!-- Ring screen: dark, edge to edge, over the lock screen. -->
+    <style name="Theme.Upupup.Ring" parent="Theme.Material3.Dark.NoActionBar">
+        <item name="android:statusBarColor">@color/ring_background</item>
+        <item name="android:navigationBarColor">@color/ring_background</item>
+        <item name="android:windowBackground">@color/ring_background</item>
+    </style>
+</resources>

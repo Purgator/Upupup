@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Upupup</string>
+
+    <string name="tab_alarms">Alarmes</string>
+    <string name="tab_timer">Minuteur</string>
+    <string name="settings_title">Réglages</string>
+    <string name="no_alarms">Aucune alarme.\nAppuyez sur + pour en créer une.</string>
+    <string name="all_alarms_off">Toutes les alarmes sont désactivées</string>
+    <string name="next_ring_in">Sonne dans %1$s</string>
+    <string name="next_ring_at">%1$s — %2$s</string>
+    <string name="add_alarm">Ajouter une alarme</string>
+    <string name="alarm_set_in">Alarme réglée — sonne dans %1$s</string>
+    <string name="duration_days">%1$dj %2$dh</string>
+    <string name="duration_hours">%1$dh %2$dmin</string>
+    <string name="duration_minutes">%1$dmin</string>
+    <string name="duration_less_than_minute">moins d\'une minute</string>
+    <string name="delete_alarm">Supprimer</string>
+
+    <string name="every_day">Tous les jours</string>
+    <string name="weekdays">En semaine</string>
+    <string name="weekend">Week-end</string>
+    <string name="once">Une fois</string>
+
+    <string name="edit_alarm">Modifier l\'alarme</string>
+    <string name="new_alarm">Nouvelle alarme</string>
+    <string name="label_hint">Nom de l\'alarme (facultatif)</string>
+    <string name="repeat">Répétition</string>
+    <string name="sound">Sonnerie</string>
+    <string name="sound_default">Sonnerie par défaut</string>
+    <string name="volume">Volume</string>
+    <string name="ramp_up">Augmenter progressivement le volume</string>
+    <string name="vibrate">Vibreur</string>
+    <string name="snooze">Rappel d\'alarme</string>
+    <string name="snooze_off">Désactivé</string>
+    <string name="snooze_desc">%1$d min, %2$s</string>
+    <string name="snooze_unlimited">illimité</string>
+    <string name="snooze_times">max %1$d</string>
+    <string name="snooze_duration">Durée du rappel</string>
+    <string name="snooze_max">Nombre de rappels</string>
+    <string name="mission">Mission de réveil</string>
+    <string name="mission_none">Aucune</string>
+    <string name="mission_shake">Secouer le téléphone</string>
+    <string name="mission_math">Résoudre des calculs</string>
+    <string name="mission_shake_desc">Secouer %1$d fois</string>
+    <string name="mission_math_desc">Calcul — %1$s</string>
+    <string name="math_easy">facile</string>
+    <string name="math_medium">moyen</string>
+    <string name="math_hard">difficile</string>
+    <string name="shake_count">Nombre de secousses</string>
+    <string name="math_difficulty">Difficulté</string>
+    <string name="output_device">Sortie audio</string>
+    <string name="output_auto">Automatique</string>
+    <string name="output_speaker">Haut-parleur du téléphone</string>
+    <string name="output_wired">Casque filaire</string>
+    <string name="output_bluetooth">Appareil Bluetooth</string>
+    <string name="output_not_connected">%1$s (non connecté — bascule en automatique)</string>
+    <string name="save">Enregistrer</string>
+
+    <string name="stop_alarm">Arrêter</string>
+    <string name="snooze_button">Rappel %1$d min</string>
+    <string name="timer_done">C\'est l\'heure !</string>
+    <string name="plus_one_minute">+1 min</string>
+    <string name="shake_remaining">Encore %1$d secousses</string>
+    <string name="shake_instruction">Secouez votre téléphone !</string>
+    <string name="math_progress">Calcul %1$d sur %2$d</string>
+    <string name="math_wrong">Faux, réessayez</string>
+    <string name="keypad_ok">OK</string>
+    <string name="keypad_clear">C</string>
+    <string name="snoozed_until">Rappel à %1$s</string>
+
+    <string name="timer_start">Démarrer</string>
+    <string name="timer_cancel">Annuler</string>
+    <string name="timer_hours">heures</string>
+    <string name="timer_minutes">min</string>
+    <string name="timer_seconds">sec</string>
+    <string name="timer_running_channel">Minuteur</string>
+    <string name="timer_notification_title">Minuteur en cours</string>
+    <string name="timer_notification_text">Sonne à %1$s</string>
+
+    <string name="alarm_channel">Alarme en cours</string>
+    <string name="upcoming_channel">Prochaine alarme</string>
+    <string name="alarm_notification_text">Alarme — appuyez pour ouvrir</string>
+
+    <string name="exact_alarm_needed">Upupup a besoin de l\'autorisation « Alarmes et rappels » pour sonner à l\'heure exacte.</string>
+    <string name="grant">Autoriser</string>
+    <string name="fullscreen_needed">Autorisez l\'affichage plein écran pour que l\'alarme puisse réveiller l\'écran.</string>
+
+    <string name="auto_update">Mises à jour automatiques</string>
+    <string name="auto_update_summary">Vérifie GitHub une fois par jour et télécharge en Wi-Fi</string>
+    <string name="check_updates_now">Vérifier les mises à jour</string>
+    <string name="checking">Vérification…</string>
+    <string name="up_to_date">À jour (v%1$s)</string>
+    <string name="update_ready_title">Mise à jour v%1$s prête</string>
+    <string name="update_ready_text">Appuyez pour installer</string>
+    <string name="update_deferred">Mise à jour v%1$s trouvée — téléchargement en Wi-Fi</string>
+    <string name="update_error">Échec de la mise à jour : %1$s</string>
+    <string name="update_channel">Mises à jour</string>
+    <string name="version_info">Version %1$s</string>
+</resources>

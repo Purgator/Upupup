@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Three chevrons rising: up, up, up. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:pathData="M54,62 L38,74 L38,66 L54,54 L70,66 L70,74 Z"
+        android:fillColor="#FFB74D" />
+    <path
+        android:pathData="M54,48 L38,60 L38,52 L54,40 L70,52 L70,60 Z"
+        android:fillColor="#FF9800" />
+    <path
+        android:pathData="M54,34 L38,46 L38,38 L54,26 L70,38 L70,46 Z"
+        android:fillColor="#FF6F00" />
+</vector>
