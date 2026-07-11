@@ -2,10 +2,13 @@ package fr.arichard.upupup
 
 import android.annotation.SuppressLint
 import android.hardware.SensorManager
+import android.os.Build
 import android.os.Bundle
 import android.view.Gravity
+import android.view.WindowManager
 import android.widget.Button
 import android.widget.Toast
+import androidx.activity.addCallback
 import androidx.appcompat.app.AppCompatActivity
 import fr.arichard.upupup.core.AlarmService
 import fr.arichard.upupup.core.Format
@@ -31,8 +34,18 @@ class RingActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         instance = WeakReference(this)
-        setShowWhenLocked(true)
-        setTurnScreenOn(true)
+        if (Build.VERSION.SDK_INT >= 27) {
+            setShowWhenLocked(true)
+            setTurnScreenOn(true)
+        } else {
+            @Suppress("DEPRECATION")
+            window.addFlags(
+                WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
+                    WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
+            )
+        }
+        // The only ways out are the mission, the snooze or the stop button.
+        onBackPressedDispatcher.addCallback(this) { /* consume */ }
 
         val alarm = AlarmService.current
         if (alarm == null) { // stale launch: the alarm already stopped
@@ -173,10 +186,6 @@ class RingActivity : AppCompatActivity() {
         }
         binding.mathAnswer.text = mathInput.toString()
     }
-
-    // The only ways out are the mission or the snooze button.
-    @Deprecated("Deprecated in Java")
-    override fun onBackPressed() = Unit
 
     override fun onDestroy() {
         if (instance?.get() === this) instance = null
