@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        tools:title="New alarm" />
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingBottom="16dp">
+
+            <TimePicker
+                android:id="@+id/time_picker"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:timePickerMode="spinner" />
+
+            <TextView
+                android:id="@+id/rings_in_preview"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:textColor="?attr/colorPrimary"
+                android:textStyle="bold"
+                tools:text="Rings in 7h 32m" />
+
+            <!-- Day-of-week toggles, Monday first -->
+            <LinearLayout
+                android:id="@+id/day_row"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:orientation="horizontal"
+                android:paddingHorizontal="12dp" />
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="16dp"
+                android:layout_marginTop="16dp"
+                android:hint="@string/label_hint">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/label_input"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textCapSentences"
+                    android:maxLines="1" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- Option rows: title left, current value right -->
+            <LinearLayout
+                android:id="@+id/row_mission"
+                style="@style/OptionRow">
+
+                <TextView style="@style/OptionTitle" android:text="@string/mission" />
+
+                <TextView
+                    android:id="@+id/mission_value"
+                    style="@style/OptionValue"
+                    tools:text="Shake 30 times" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/row_sound"
+                style="@style/OptionRow">
+
+                <TextView style="@style/OptionTitle" android:text="@string/sound" />
+
+                <TextView
+                    android:id="@+id/sound_value"
+                    style="@style/OptionValue"
+                    tools:text="Default alarm sound" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/row_snooze"
+                style="@style/OptionRow">
+
+                <TextView style="@style/OptionTitle" android:text="@string/snooze" />
+
+                <TextView
+                    android:id="@+id/snooze_value"
+                    style="@style/OptionValue"
+                    tools:text="5 min, unlimited" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/row_output"
+                style="@style/OptionRow">
+
+                <TextView style="@style/OptionTitle" android:text="@string/output_device" />
+
+                <TextView
+                    android:id="@+id/output_value"
+                    style="@style/OptionValue"
+                    tools:text="Automatic" />
+            </LinearLayout>
+
+            <LinearLayout
+                style="@style/OptionRow"
+                android:paddingVertical="8dp">
+
+                <TextView style="@style/OptionTitle" android:text="@string/volume" />
+
+                <SeekBar
+                    android:id="@+id/volume_slider"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1.4"
+                    android:max="100"
+                    android:min="10" />
+            </LinearLayout>
+
+            <com.google.android.material.materialswitch.MaterialSwitch
+                android:id="@+id/ramp_switch"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingHorizontal="16dp"
+                android:paddingVertical="8dp"
+                android:text="@string/ramp_up" />
+
+            <com.google.android.material.materialswitch.MaterialSwitch
+                android:id="@+id/vibrate_switch"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingHorizontal="16dp"
+                android:paddingVertical="8dp"
+                android:text="@string/vibrate" />
+        </LinearLayout>
+    </ScrollView>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/save_button"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:layout_margin="16dp"
+        android:text="@string/save"
+        android:textSize="18sp"
+        app:cornerRadius="16dp" />
+</LinearLayout>
