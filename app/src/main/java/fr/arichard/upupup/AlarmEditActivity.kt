@@ -8,6 +8,7 @@ import android.os.Build
 import android.os.Bundle
 import android.widget.SeekBar
 import android.widget.Toast
+import androidx.activity.addCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import com.google.android.material.button.MaterialButton
@@ -30,6 +31,9 @@ class AlarmEditActivity : AppCompatActivity() {
 
     /** The alarm being edited; mutated by the option dialogs, written on Save. */
     private var draft: Alarm = defaultDraft()
+
+    /** Snapshot taken on open, to detect and summarize unsaved changes. */
+    private lateinit var original: Alarm
     private var isNew = true
 
     private val soundPicker =
@@ -64,10 +68,12 @@ class AlarmEditActivity : AppCompatActivity() {
             draft = it
             isNew = false
         }
+        original = draft
 
         binding.toolbar.title = getString(if (isNew) R.string.new_alarm else R.string.edit_alarm)
         binding.toolbar.setNavigationIcon(androidx.appcompat.R.drawable.abc_ic_ab_back_material)
-        binding.toolbar.setNavigationOnClickListener { finish() }
+        binding.toolbar.setNavigationOnClickListener { confirmExit() }
+        onBackPressedDispatcher.addCallback(this) { confirmExit() }
         if (!isNew) {
             binding.toolbar.inflateMenu(R.menu.menu_edit)
             binding.toolbar.setOnMenuItemClickListener {
@@ -93,6 +99,7 @@ class AlarmEditActivity : AppCompatActivity() {
         binding.rowSound.setOnClickListener { pickSound() }
         binding.rowSnooze.setOnClickListener { pickSnooze() }
         binding.rowOutput.setOnClickListener { pickOutput() }
+        binding.rowRoutine.setOnClickListener { pickRoutine() }
 
         binding.volumeSlider.progress = draft.volume
         binding.volumeSlider.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
@@ -117,11 +124,12 @@ class AlarmEditActivity : AppCompatActivity() {
         updateValues()
     }
 
+    /** [draft] plus whatever is currently typed in the label field. */
+    private fun currentDraft(): Alarm =
+        draft.copy(label = binding.labelInput.text?.toString()?.trim().orEmpty())
+
     private fun save() {
-        draft = draft.copy(
-            label = binding.labelInput.text?.toString()?.trim().orEmpty(),
-            enabled = true,
-        )
+        draft = currentDraft().copy(enabled = true)
         store.save(draft)
         store.clearSnooze(draft.id)
         AlarmScheduler.schedule(this, draft, store)
@@ -130,6 +138,75 @@ class AlarmEditActivity : AppCompatActivity() {
             this, getString(R.string.alarm_set_in, Format.delay(this, delay)), Toast.LENGTH_LONG
         ).show()
         finish()
+    }
+
+    // ---- Unsaved-changes guard ----
+
+    /** One localized "Field: old → new" line per difference between open and now. */
+    private fun changeSummary(): List<String> {
+        val old = original
+        val new = currentDraft()
+        val lines = mutableListOf<String>()
+        fun add(fieldRes: Int, from: String, to: String) {
+            lines.add(getString(R.string.change_line, getString(fieldRes), from, to))
+        }
+
+        if (old.hour != new.hour || old.minute != new.minute) {
+            add(
+                R.string.field_time,
+                String.format(java.util.Locale.ROOT, "%02d:%02d", old.hour, old.minute),
+                String.format(java.util.Locale.ROOT, "%02d:%02d", new.hour, new.minute),
+            )
+        }
+        if (old.days != new.days) {
+            add(R.string.repeat, Format.days(this, old.days), Format.days(this, new.days))
+        }
+        if (old.label != new.label) {
+            add(R.string.field_label, old.label.ifBlank { "—" }, new.label.ifBlank { "—" })
+        }
+        if (old.soundUri != new.soundUri) {
+            add(R.string.sound, soundName(old), soundName(new))
+        }
+        if (old.volume != new.volume) {
+            add(R.string.volume, "${old.volume}%", "${new.volume}%")
+        }
+        if (old.rampUp != new.rampUp) {
+            add(R.string.ramp_up, onOff(old.rampUp), onOff(new.rampUp))
+        }
+        if (old.vibrate != new.vibrate) {
+            add(R.string.vibrate, onOff(old.vibrate), onOff(new.vibrate))
+        }
+        if (old.snoozeMinutes != new.snoozeMinutes || old.maxSnoozes != new.maxSnoozes) {
+            add(R.string.snooze, snoozeName(old), snoozeName(new))
+        }
+        if (old.mission != new.mission || old.missionLevel != new.missionLevel) {
+            add(R.string.mission, missionName(old), missionName(new))
+        }
+        if (old.output != new.output) {
+            add(R.string.output_device, outputName(old.output), outputName(new.output))
+        }
+        if (old.routinePackage != new.routinePackage) {
+            add(R.string.routine, routineName(old.routinePackage), routineName(new.routinePackage))
+        }
+        return lines
+    }
+
+    private fun onOff(value: Boolean): String =
+        getString(if (value) R.string.on else R.string.off)
+
+    private fun confirmExit() {
+        val changes = changeSummary()
+        if (changes.isEmpty()) {
+            finish()
+            return
+        }
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.unsaved_title)
+            .setMessage(changes.joinToString("\n"))
+            .setPositiveButton(R.string.save) { _, _ -> save() }
+            .setNegativeButton(R.string.discard) { _, _ -> finish() }
+            .setNeutralButton(android.R.string.cancel, null)
+            .show()
     }
 
     // ---- Day toggles ----
@@ -209,11 +286,15 @@ class AlarmEditActivity : AppCompatActivity() {
         var level = if (draft.missionLevel > 0) draft.missionLevel else defaultLevelFor(selected)
         val cards = mutableListOf<com.google.android.material.card.MaterialCardView>()
 
+        val accent = com.google.android.material.color.MaterialColors.getColor(
+            binding.root, com.google.android.material.R.attr.colorPrimary
+        )
+
         fun refreshCards() {
             cards.forEachIndexed { i, card ->
                 val active = missionChoices[i].mission == selected
                 card.strokeWidth = (resources.displayMetrics.density * if (active) 2 else 0).toInt()
-                card.strokeColor = getColor(R.color.primary)
+                card.strokeColor = accent
                 card.isChecked = active
             }
         }
@@ -260,9 +341,7 @@ class AlarmEditActivity : AppCompatActivity() {
             }
             cell.addView(android.widget.ImageView(this).apply {
                 setImageResource(choice.icon)
-                imageTintList = android.content.res.ColorStateList.valueOf(
-                    getColor(R.color.primary)
-                )
+                imageTintList = android.content.res.ColorStateList.valueOf(accent)
                 layoutParams = android.widget.LinearLayout.LayoutParams(
                     (density * 34).toInt(), (density * 34).toInt()
                 )
@@ -387,33 +466,72 @@ class AlarmEditActivity : AppCompatActivity() {
             .show()
     }
 
+    // ---- Routine (app launched after the alarm is stopped) ----
+
+    private fun pickRoutine() {
+        val pm = packageManager
+        val apps = pm.queryIntentActivities(
+            Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER), 0
+        )
+            .map { it.activityInfo.packageName to it.loadLabel(pm).toString() }
+            .filter { it.first != packageName }
+            .distinctBy { it.first }
+            .sortedBy { it.second.lowercase() }
+        val labels =
+            (listOf(getString(R.string.routine_none)) + apps.map { it.second }).toTypedArray()
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.routine)
+            .setItems(labels) { _, which ->
+                draft = draft.copy(
+                    routinePackage = if (which == 0) null else apps[which - 1].first
+                )
+                updateValues()
+            }
+            .show()
+    }
+
+    private fun routineName(packageName: String?): String {
+        packageName ?: return getString(R.string.routine_none)
+        val label = runCatching {
+            packageManager.getApplicationLabel(
+                packageManager.getApplicationInfo(packageName, 0)
+            ).toString()
+        }.getOrDefault(packageName)
+        return getString(R.string.routine_open, label)
+    }
+
     // ---- Display ----
 
     private fun updateValues() {
-        binding.missionValue.text = when (draft.mission) {
-            Mission.NONE -> getString(R.string.mission_none)
-            Mission.SHAKE -> getString(R.string.mission_shake_desc, draft.missionLevel)
-            Mission.MATH -> getString(
-                R.string.mission_math_desc, AlarmAdapter.mathLevelName(this, draft.missionLevel)
-            )
-            Mission.TYPING -> getString(R.string.mission_typing_desc, draft.missionLevel)
-            Mission.STEPS -> getString(R.string.mission_steps_desc, draft.missionLevel)
-            Mission.MEMORY -> getString(
-                R.string.mission_memory_desc, AlarmAdapter.mathLevelName(this, draft.missionLevel)
-            )
-        }
-        binding.soundValue.text = soundName()
-        binding.snoozeValue.text = if (draft.snoozeMinutes == 0) {
-            getString(R.string.snooze_off)
-        } else {
-            getString(
-                R.string.snooze_desc, draft.snoozeMinutes,
-                if (draft.maxSnoozes == 0) getString(R.string.snooze_unlimited)
-                else getString(R.string.snooze_times, draft.maxSnoozes)
-            )
-        }
+        binding.missionValue.text = missionName(draft)
+        binding.soundValue.text = soundName(draft)
+        binding.snoozeValue.text = snoozeName(draft)
         binding.outputValue.text = outputName(draft.output)
+        binding.routineValue.text = routineName(draft.routinePackage)
         updateRingsInPreview()
+    }
+
+    private fun missionName(alarm: Alarm): String = when (alarm.mission) {
+        Mission.NONE -> getString(R.string.mission_none)
+        Mission.SHAKE -> getString(R.string.mission_shake_desc, alarm.missionLevel)
+        Mission.MATH -> getString(
+            R.string.mission_math_desc, AlarmAdapter.mathLevelName(this, alarm.missionLevel)
+        )
+        Mission.TYPING -> getString(R.string.mission_typing_desc, alarm.missionLevel)
+        Mission.STEPS -> getString(R.string.mission_steps_desc, alarm.missionLevel)
+        Mission.MEMORY -> getString(
+            R.string.mission_memory_desc, AlarmAdapter.mathLevelName(this, alarm.missionLevel)
+        )
+    }
+
+    private fun snoozeName(alarm: Alarm): String = if (alarm.snoozeMinutes == 0) {
+        getString(R.string.snooze_off)
+    } else {
+        getString(
+            R.string.snooze_desc, alarm.snoozeMinutes,
+            if (alarm.maxSnoozes == 0) getString(R.string.snooze_unlimited)
+            else getString(R.string.snooze_times, alarm.maxSnoozes)
+        )
     }
 
     private fun updateRingsInPreview() {
@@ -421,8 +539,8 @@ class AlarmEditActivity : AppCompatActivity() {
         binding.ringsInPreview.text = getString(R.string.next_ring_in, Format.delay(this, delay))
     }
 
-    private fun soundName(): String {
-        val uri = draft.soundUri?.let(Uri::parse) ?: return getString(R.string.sound_default)
+    private fun soundName(alarm: Alarm): String {
+        val uri = alarm.soundUri?.let(Uri::parse) ?: return getString(R.string.sound_default)
         return runCatching { RingtoneManager.getRingtone(this, uri)?.getTitle(this) }
             .getOrNull() ?: getString(R.string.sound_default)
     }
