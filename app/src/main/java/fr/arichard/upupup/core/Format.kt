@@ -27,6 +27,14 @@ object Format {
     fun time(context: Context, epochMillis: Long): String =
         DateFormat.getTimeFormat(context).format(Date(epochMillis))
 
+    /** Human name of a concrete sound output (not [Output.DEFAULT]). */
+    fun output(context: Context, output: Output): String = when (output) {
+        Output.SPEAKER -> context.getString(R.string.output_speaker)
+        Output.WIRED -> context.getString(R.string.output_wired)
+        Output.BLUETOOTH -> context.getString(R.string.output_bluetooth)
+        Output.AUTO, Output.DEFAULT -> context.getString(R.string.output_auto)
+    }
+
     /** Short weekday summary for an alarm: "Mon, Tue, Fri", "Every day", "Once"… */
     fun days(context: Context, days: Set<Int>): String {
         if (days.isEmpty()) return context.getString(R.string.once)

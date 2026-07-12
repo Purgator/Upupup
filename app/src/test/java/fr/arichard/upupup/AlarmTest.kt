@@ -80,7 +80,20 @@ class AlarmTest {
     fun `json defaults survive missing fields`() {
         val alarm = Alarm.fromJson(org.json.JSONObject("""{"id":1,"hour":7,"minute":0}"""))
         assertEquals(Mission.NONE, alarm.mission)
-        assertEquals(Output.AUTO, alarm.output)
+        assertEquals(Output.DEFAULT, alarm.output)
         assertTrue(alarm.enabled)
+    }
+
+    @Test
+    fun `legacy AUTO output migrates to follow the global setting`() {
+        val alarm = Alarm.fromJson(
+            org.json.JSONObject("""{"id":1,"hour":7,"minute":0,"output":"AUTO"}""")
+        )
+        assertEquals(Output.DEFAULT, alarm.output)
+        // Explicit overrides are preserved.
+        val speaker = Alarm.fromJson(
+            org.json.JSONObject("""{"id":1,"hour":7,"minute":0,"output":"SPEAKER"}""")
+        )
+        assertEquals(Output.SPEAKER, speaker.output)
     }
 }

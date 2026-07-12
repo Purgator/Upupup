@@ -17,6 +17,12 @@ class Prefs(context: Context) {
         get() = prefs.getBoolean("swipe_to_snooze", true)
         set(value) = prefs.edit().putBoolean("swipe_to_snooze", value).apply()
 
+    /** App-wide sound output; alarms with [Output.DEFAULT] follow this. */
+    var defaultOutput: Output
+        get() = runCatching { Output.valueOf(prefs.getString("default_output", null) ?: "") }
+            .getOrDefault(Output.AUTO)
+        set(value) = prefs.edit().putString("default_output", value.name).apply()
+
     var lastUpdateCheck: Long
         get() = prefs.getLong("last_update_check", 0)
         set(value) = prefs.edit().putLong("last_update_check", value).apply()

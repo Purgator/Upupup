@@ -66,6 +66,21 @@ class AlarmAdapter(
             }
             binding.alarmDetails.text = parts.joinToString(" · ")
 
+            binding.outputIcon.visibility =
+                if (alarm.output == fr.arichard.upupup.core.Output.DEFAULT) {
+                    android.view.View.GONE
+                } else {
+                    android.view.View.VISIBLE
+                }
+            binding.outputIcon.setImageResource(
+                when (alarm.output) {
+                    fr.arichard.upupup.core.Output.SPEAKER -> R.drawable.ic_speaker
+                    fr.arichard.upupup.core.Output.WIRED -> R.drawable.ic_headphones
+                    fr.arichard.upupup.core.Output.BLUETOOTH -> R.drawable.ic_bluetooth
+                    else -> R.drawable.ic_sound
+                }
+            )
+
             binding.missionIcon.visibility =
                 if (alarm.mission == Mission.NONE) android.view.View.GONE
                 else android.view.View.VISIBLE
