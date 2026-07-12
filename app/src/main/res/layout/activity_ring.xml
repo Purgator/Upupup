@@ -63,7 +63,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
             android:fontFamily="sans-serif-thin"
-            android:textColor="@color/primary"
+            android:textColor="@color/ring_accent"
             android:textSize="88sp"
             tools:text="15" />
 
@@ -101,7 +101,7 @@
             android:background="#22FFFFFF"
             android:gravity="center"
             android:minHeight="48dp"
-            android:textColor="@color/primary"
+            android:textColor="@color/ring_accent"
             android:textSize="32sp"
             tools:text="89" />
 
