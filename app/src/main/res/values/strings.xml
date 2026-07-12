@@ -120,6 +120,10 @@
     <string name="auto_update_summary">Checks GitHub once a day and downloads new versions on Wi-Fi</string>
     <string name="check_updates_now">Check for updates now</string>
     <string name="checking">Checking…</string>
+    <string name="downloading">Downloading…</string>
+    <string name="install_now">Install update</string>
+    <string name="update_downloaded">Update v%1$s downloaded and ready</string>
+    <string name="install_permission_needed">Allow Upupup to install updates, then try again.</string>
     <string name="up_to_date">Up to date (v%1$s)</string>
     <string name="update_ready_title">Update v%1$s ready</string>
     <string name="update_ready_text">Tap to install</string>

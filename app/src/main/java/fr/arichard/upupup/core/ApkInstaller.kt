@@ -32,11 +32,32 @@ object ApkInstaller {
             Log.w(TAG, "APK missing or empty: $apk")
             return
         }
+        // Without the "install unknown apps" grant the system swallows the install
+        // silently. Send the user to the exact settings screen instead.
+        if (!context.packageManager.canRequestPackageInstalls()) {
+            toast(context, context.getString(R.string.install_permission_needed))
+            runCatching {
+                context.startActivity(
+                    Intent(
+                        android.provider.Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
+                        android.net.Uri.parse("package:${context.packageName}")
+                    ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                )
+            }
+            return
+        }
         try {
             installViaSession(context.applicationContext, apk)
         } catch (e: Exception) {
             Log.w(TAG, "Session install failed, falling back to installer intent", e)
             fallbackInstall(context, apk)
+        }
+    }
+
+    private fun toast(context: Context, message: String) {
+        android.os.Handler(android.os.Looper.getMainLooper()).post {
+            android.widget.Toast.makeText(context, message, android.widget.Toast.LENGTH_LONG)
+                .show()
         }
     }
 
@@ -120,13 +141,6 @@ object ApkInstaller {
                     Log.w(TAG, "Install failed: $msg")
                     toast(context, context.getString(R.string.update_error, msg ?: "?"))
                 }
-            }
-        }
-
-        private fun toast(context: Context, message: String) {
-            android.os.Handler(android.os.Looper.getMainLooper()).post {
-                android.widget.Toast.makeText(context, message, android.widget.Toast.LENGTH_LONG)
-                    .show()
             }
         }
     }
