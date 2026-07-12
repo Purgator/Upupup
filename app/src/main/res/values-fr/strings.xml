@@ -112,6 +112,10 @@
     <string name="auto_update_summary">Vérifie GitHub une fois par jour et télécharge en Wi-Fi</string>
     <string name="check_updates_now">Vérifier les mises à jour</string>
     <string name="checking">Vérification…</string>
+    <string name="downloading">Téléchargement…</string>
+    <string name="install_now">Installer la mise à jour</string>
+    <string name="update_downloaded">Mise à jour v%1$s téléchargée et prête</string>
+    <string name="install_permission_needed">Autorisez Upupup à installer des mises à jour, puis réessayez.</string>
     <string name="up_to_date">À jour (v%1$s)</string>
     <string name="update_ready_title">Mise à jour v%1$s prête</string>
     <string name="update_ready_text">Appuyez pour installer</string>

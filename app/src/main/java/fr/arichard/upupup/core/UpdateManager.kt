@@ -91,7 +91,11 @@ object UpdateManager {
      * Call from a background thread.
      */
     @Synchronized
-    fun check(context: Context, allowDownload: Boolean): Result {
+    fun check(
+        context: Context,
+        allowDownload: Boolean,
+        onDownloading: (() -> Unit)? = null,
+    ): Result {
         val appContext = context.applicationContext
         return try {
             val json = JSONObject(httpGet(API_URL))
@@ -123,6 +127,7 @@ object UpdateManager {
             if (apk.isFile && apk.length() == assetSize) return Result(Status.UPDATE_READY, remote)
             if (!allowDownload) return Result(Status.UPDATE_DEFERRED, remote)
 
+            onDownloading?.invoke()
             download(assetUrl, apk, assetSize)
             Log.i(TAG, "Downloaded update $remote (${apk.length()} bytes)")
             Result(Status.UPDATE_READY, remote)
