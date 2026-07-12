@@ -125,6 +125,21 @@
             </LinearLayout>
 
             <LinearLayout
+                android:id="@+id/row_routine"
+                style="@style/OptionRow">
+
+                <TextView
+                    style="@style/OptionTitle"
+                    android:drawableStart="@drawable/ic_routine"
+                    android:text="@string/routine" />
+
+                <TextView
+                    android:id="@+id/routine_value"
+                    style="@style/OptionValue"
+                    tools:text="Do nothing" />
+            </LinearLayout>
+
+            <LinearLayout
                 style="@style/OptionRow"
                 android:paddingVertical="8dp">
 

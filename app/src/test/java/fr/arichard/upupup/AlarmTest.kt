@@ -72,6 +72,7 @@ class AlarmTest {
             volume = 55, rampUp = false, vibrate = false,
             snoozeMinutes = 10, maxSnoozes = 3,
             mission = Mission.MATH, missionLevel = 2, output = Output.BLUETOOTH,
+            routinePackage = "com.spotify.music",
         )
         assertEquals(alarm, Alarm.fromJson(alarm.toJson()))
     }
