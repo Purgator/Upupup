@@ -188,20 +188,54 @@
         android:layout_height="0dp"
         android:layout_weight="1" />
 
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/stop_button"
+    <!-- Snooze: either a swipe-up hint or a tap button, per the app setting -->
+    <TextView
+        android:id="@+id/swipe_hint"
         android:layout_width="match_parent"
-        android:layout_height="68dp"
-        android:text="@string/stop_alarm"
-        android:textSize="22sp"
-        app:cornerRadius="34dp" />
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="12dp"
+        android:gravity="center"
+        android:textColor="#9FA8DA"
+        android:textSize="15sp"
+        android:visibility="gone"
+        tools:text="↑ Swipe up to snooze (5 min)" />
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/snooze_button"
         style="@style/Widget.Material3.Button.TextButton"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
+        android:layout_marginBottom="8dp"
         android:textColor="#9FA8DA"
+        android:visibility="gone"
         tools:text="Snooze 5 min" />
+
+    <!-- Slide to stop: completing the slide stops the alarm, or starts the mission -->
+    <FrameLayout
+        android:id="@+id/stop_slider_container"
+        android:layout_width="match_parent"
+        android:layout_height="68dp">
+
+        <TextView
+            android:id="@+id/slide_label"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:importantForAccessibility="no"
+            android:text="@string/slide_to_stop"
+            android:textColor="#B8BFE8"
+            android:textSize="16sp" />
+
+        <SeekBar
+            android:id="@+id/stop_slider"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@drawable/slider_track"
+            android:max="100"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            android:progressDrawable="@android:color/transparent"
+            android:splitTrack="false"
+            android:thumb="@drawable/slider_thumb" />
+    </FrameLayout>
 </LinearLayout>

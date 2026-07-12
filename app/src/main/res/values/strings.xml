@@ -73,6 +73,9 @@
 
     <!-- Ring screen -->
     <string name="stop_alarm">Stop</string>
+    <string name="slide_to_stop">Slide to stop</string>
+    <string name="swipe_snooze_hint">↑ Swipe up to snooze (%1$d min)</string>
+    <string name="swipe_snooze_hint_timer">↑ Swipe up: +1 min</string>
     <string name="snooze_button">Snooze %1$d min</string>
     <string name="timer_done">Time\'s up!</string>
     <string name="plus_one_minute">+1 min</string>
@@ -108,8 +111,11 @@
     <string name="exact_alarm_needed">Upupup needs the “Alarms &amp; reminders” permission so alarms ring exactly on time.</string>
     <string name="grant">Grant</string>
     <string name="fullscreen_needed">Allow “Display over other apps while ringing” so the alarm can wake the screen.</string>
+    <string name="overlay_needed">Allow “Display over other apps” so the alarm screen pops up instantly when it rings — even when the phone is locked.</string>
 
     <!-- Settings -->
+    <string name="swipe_snooze_setting">Swipe up to snooze</string>
+    <string name="swipe_snooze_setting_summary">On the ring screen, snooze with an upward swipe instead of a button</string>
     <string name="auto_update">Automatic updates</string>
     <string name="auto_update_summary">Checks GitHub once a day and downloads new versions on Wi-Fi</string>
     <string name="check_updates_now">Check for updates now</string>

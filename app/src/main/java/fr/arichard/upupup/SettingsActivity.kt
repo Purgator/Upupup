@@ -23,6 +23,10 @@ class SettingsActivity : AppCompatActivity() {
         binding.toolbar.setNavigationOnClickListener { finish() }
 
         val prefs = Prefs(this)
+        binding.swipeSnoozeSwitch.isChecked = prefs.swipeToSnooze
+        binding.swipeSnoozeSwitch.setOnCheckedChangeListener { _, checked ->
+            prefs.swipeToSnooze = checked
+        }
         binding.autoUpdateSwitch.isChecked = prefs.autoUpdate
         binding.autoUpdateSwitch.setOnCheckedChangeListener { _, checked ->
             prefs.autoUpdate = checked

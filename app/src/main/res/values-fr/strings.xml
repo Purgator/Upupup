@@ -69,6 +69,9 @@
     <string name="save">Enregistrer</string>
 
     <string name="stop_alarm">Arrêter</string>
+    <string name="slide_to_stop">Glisser pour arrêter</string>
+    <string name="swipe_snooze_hint">↑ Balayer vers le haut : rappel (%1$d min)</string>
+    <string name="swipe_snooze_hint_timer">↑ Balayer vers le haut : +1 min</string>
     <string name="snooze_button">Rappel %1$d min</string>
     <string name="timer_done">C\'est l\'heure !</string>
     <string name="plus_one_minute">+1 min</string>
@@ -101,7 +104,10 @@
     <string name="exact_alarm_needed">Upupup a besoin de l\'autorisation « Alarmes et rappels » pour sonner à l\'heure exacte.</string>
     <string name="grant">Autoriser</string>
     <string name="fullscreen_needed">Autorisez l\'affichage plein écran pour que l\'alarme puisse réveiller l\'écran.</string>
+    <string name="overlay_needed">Autorisez « Superposition aux autres applis » pour que l\'écran d\'alarme apparaisse instantanément quand elle sonne — même téléphone verrouillé.</string>
 
+    <string name="swipe_snooze_setting">Rappel par balayage vers le haut</string>
+    <string name="swipe_snooze_setting_summary">Sur l\'écran d\'alarme, balayez vers le haut au lieu d\'appuyer sur un bouton</string>
     <string name="auto_update">Mises à jour automatiques</string>
     <string name="auto_update_summary">Vérifie GitHub une fois par jour et télécharge en Wi-Fi</string>
     <string name="check_updates_now">Vérifier les mises à jour</string>

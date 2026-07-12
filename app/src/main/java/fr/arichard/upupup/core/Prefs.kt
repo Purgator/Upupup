@@ -12,6 +12,11 @@ class Prefs(context: Context) {
         get() = prefs.getBoolean("auto_update", true)
         set(value) = prefs.edit().putBoolean("auto_update", value).apply()
 
+    /** Snooze gesture on the ring screen: swipe up (default) or a tap button. */
+    var swipeToSnooze: Boolean
+        get() = prefs.getBoolean("swipe_to_snooze", true)
+        set(value) = prefs.edit().putBoolean("swipe_to_snooze", value).apply()
+
     var lastUpdateCheck: Long
         get() = prefs.getLong("last_update_check", 0)
         set(value) = prefs.edit().putLong("last_update_check", value).apply()
