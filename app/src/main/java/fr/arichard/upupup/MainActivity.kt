@@ -259,6 +259,24 @@ class MainActivity : AppCompatActivity() {
             )
         }
 
+        // "Display over other apps": lets the ringing service pop the alarm screen
+        // instantly, even from the background or the lock screen. The full-screen
+        // notification alone is unreliable on many devices, so insist on this one.
+        if (!Settings.canDrawOverlays(this)) {
+            MaterialAlertDialogBuilder(this)
+                .setMessage(R.string.overlay_needed)
+                .setPositiveButton(R.string.grant) { _, _ ->
+                    startActivity(
+                        Intent(
+                            Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                            android.net.Uri.parse("package:$packageName")
+                        )
+                    )
+                }
+                .setNegativeButton(android.R.string.cancel, null)
+                .show()
+        }
+
         // Android 12: exact alarms are a user-grantable special permission.
         if (Build.VERSION.SDK_INT in 31..32) {
             val manager = getSystemService(AlarmManager::class.java)
