@@ -74,6 +74,16 @@
     <string name="output_bluetooth">Bluetooth device</string>
     <string name="output_not_connected">%1$s (not connected — falls back to automatic)</string>
     <string name="save">Save</string>
+    <string name="discard">Don\'t save</string>
+    <string name="unsaved_title">Unsaved changes</string>
+    <string name="change_line">%1$s: %2$s → %3$s</string>
+    <string name="field_time">Time</string>
+    <string name="field_label">Name</string>
+    <string name="on">On</string>
+    <string name="off">Off</string>
+    <string name="routine">After stopping</string>
+    <string name="routine_none">Do nothing</string>
+    <string name="routine_open">Open %1$s</string>
 
     <!-- Ring screen -->
     <string name="stop_alarm">Stop</string>
