@@ -36,6 +36,9 @@ class RingActivity : AppCompatActivity() {
     private lateinit var binding: ActivityRingBinding
     private val handler = Handler(Looper.getMainLooper())
 
+    private var ringingAlarm: fr.arichard.upupup.core.Alarm? = null
+    private var snoozeGestureDetector: android.view.GestureDetector? = null
+
     private var shakeDetector: ShakeDetector? = null
     private var stepDetector: StepDetector? = null
     private var countLeft = 0
@@ -83,44 +86,112 @@ class RingActivity : AppCompatActivity() {
             else -> ""
         }
 
-        binding.stopButton.setOnClickListener { stopAlarm() }
+        ringingAlarm = alarm
+        setupSnoozeAction(alarm)
+        setupStopSlider()
+    }
 
-        if (AlarmService.canSnooze(this)) {
-            binding.snoozeButton.text = if (AlarmService.currentIsTimer) {
-                getString(R.string.plus_one_minute)
-            } else {
-                getString(R.string.snooze_button, alarm.snoozeMinutes)
+    // ---- Stop: slide gate, then the mission (if any) ----
+
+    private fun setupStopSlider() {
+        binding.stopSlider.setOnSeekBarChangeListener(
+            object : android.widget.SeekBar.OnSeekBarChangeListener {
+                override fun onProgressChanged(
+                    seekBar: android.widget.SeekBar, progress: Int, fromUser: Boolean
+                ) = Unit
+
+                override fun onStartTrackingTouch(seekBar: android.widget.SeekBar) = Unit
+
+                override fun onStopTrackingTouch(seekBar: android.widget.SeekBar) {
+                    if (seekBar.progress >= 95) onSlideCompleted() else seekBar.progress = 0
+                }
             }
-            binding.snoozeButton.setOnClickListener {
-                val until = System.currentTimeMillis() + alarm.snoozeMinutes * 60_000L
-                Toast.makeText(
-                    applicationContext,
-                    getString(R.string.snoozed_until, Format.time(this, until)),
-                    Toast.LENGTH_LONG
-                ).show()
-                AlarmService.snooze(this)
-            }
-        } else {
-            binding.snoozeButton.visibility = View.GONE
+        )
+        // A slide must start on the handle: ignore taps landing further along the track,
+        // otherwise a single tap at the far end would count as a completed slide.
+        binding.stopSlider.setOnTouchListener { view, event ->
+            event.action == android.view.MotionEvent.ACTION_DOWN &&
+                binding.stopSlider.progress < 10 && event.x > view.width * 0.3f
         }
+    }
 
+    private fun onSlideCompleted() {
+        val alarm = ringingAlarm ?: return
+        if (alarm.mission == Mission.NONE) {
+            stopAlarm()
+            return
+        }
+        binding.stopSliderContainer.visibility = View.GONE
         when (alarm.mission) {
-            Mission.NONE -> Unit
             Mission.SHAKE -> setupShake(alarm.missionLevel.coerceAtLeast(10))
             Mission.MATH -> setupMath(alarm.missionLevel.coerceIn(1, 3))
             Mission.TYPING -> setupTyping(alarm.missionLevel.coerceIn(1, 3))
             Mission.STEPS -> setupSteps(alarm.missionLevel.coerceAtLeast(10))
             Mission.MEMORY -> setupMemory(alarm.missionLevel.coerceIn(1, 3))
+            Mission.NONE -> Unit
         }
+        startSensors()
+    }
+
+    // ---- Snooze: swipe up or tap button, per app setting ----
+
+    private fun setupSnoozeAction(alarm: fr.arichard.upupup.core.Alarm) {
+        if (!AlarmService.canSnooze(this)) return
+        if (fr.arichard.upupup.core.Prefs(this).swipeToSnooze) {
+            binding.swipeHint.visibility = View.VISIBLE
+            binding.swipeHint.text = if (AlarmService.currentIsTimer) {
+                getString(R.string.swipe_snooze_hint_timer)
+            } else {
+                getString(R.string.swipe_snooze_hint, alarm.snoozeMinutes)
+            }
+            snoozeGestureDetector = android.view.GestureDetector(
+                this,
+                object : android.view.GestureDetector.SimpleOnGestureListener() {
+                    override fun onFling(
+                        e1: android.view.MotionEvent?, e2: android.view.MotionEvent,
+                        velocityX: Float, velocityY: Float
+                    ): Boolean {
+                        val travelled = (e1?.y ?: e2.y) - e2.y
+                        val farEnough = travelled > resources.displayMetrics.density * 120
+                        if (velocityY < -2_000 && farEnough) {
+                            doSnooze()
+                            return true
+                        }
+                        return false
+                    }
+                }
+            )
+        } else {
+            binding.snoozeButton.visibility = View.VISIBLE
+            binding.snoozeButton.text = if (AlarmService.currentIsTimer) {
+                getString(R.string.plus_one_minute)
+            } else {
+                getString(R.string.snooze_button, alarm.snoozeMinutes)
+            }
+            binding.snoozeButton.setOnClickListener { doSnooze() }
+        }
+    }
+
+    private fun doSnooze() {
+        val alarm = ringingAlarm ?: return
+        val until = System.currentTimeMillis() + alarm.snoozeMinutes * 60_000L
+        Toast.makeText(
+            applicationContext,
+            getString(R.string.snoozed_until, Format.time(this, until)),
+            Toast.LENGTH_LONG
+        ).show()
+        AlarmService.snooze(this)
+    }
+
+    /** Feeds every touch to the snooze fling detector without stealing it from views. */
+    override fun dispatchTouchEvent(ev: android.view.MotionEvent): Boolean {
+        snoozeGestureDetector?.onTouchEvent(ev)
+        return super.dispatchTouchEvent(ev)
     }
 
     private fun stopAlarm() {
         AlarmService.dismiss(this)
         finish()
-    }
-
-    private fun hideStopButton() {
-        binding.stopButton.visibility = View.GONE
     }
 
     // ---- Counter missions: shake & steps ----
@@ -145,7 +216,6 @@ class RingActivity : AppCompatActivity() {
     }
 
     private fun setupCounter(instruction: String, count: Int) {
-        hideStopButton()
         binding.counterContainer.visibility = View.VISIBLE
         binding.counterInstruction.text = instruction
         countLeft = count
@@ -164,6 +234,10 @@ class RingActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        startSensors()
+    }
+
+    private fun startSensors() {
         val sensors = getSystemService(SensorManager::class.java)
         shakeDetector?.start(sensors)
         stepDetector?.let {
@@ -186,7 +260,6 @@ class RingActivity : AppCompatActivity() {
     // ---- Math mission ----
 
     private fun setupMath(difficulty: Int) {
-        hideStopButton()
         binding.mathContainer.visibility = View.VISIBLE
         binding.missionProgress.visibility = View.VISIBLE
         buildKeypad(difficulty)
@@ -246,7 +319,6 @@ class RingActivity : AppCompatActivity() {
     // ---- Typing mission ----
 
     private fun setupTyping(phraseCount: Int) {
-        hideStopButton()
         binding.typingContainer.visibility = View.VISIBLE
         binding.missionProgress.visibility = View.VISIBLE
         phrases = resources.getStringArray(R.array.typing_phrases)
@@ -284,7 +356,6 @@ class RingActivity : AppCompatActivity() {
     // ---- Memory mission (Simon-style) ----
 
     private fun setupMemory(difficulty: Int) {
-        hideStopButton()
         binding.memoryContainer.visibility = View.VISIBLE
         memorySequence = MemoryMission.generate(difficulty)
 
