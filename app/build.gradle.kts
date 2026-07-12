@@ -13,8 +13,8 @@ android {
         applicationId = "fr.arichard.upupup"
         minSdk = 26
         targetSdk = 34
-        versionCode = 2
-        versionName = "1.1"
+        versionCode = 3
+        versionName = "1.2"
     }
 
     // Optional release signing: reads keystore.properties at the repo root when present.
