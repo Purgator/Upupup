@@ -233,7 +233,16 @@ class RingActivity : AppCompatActivity() {
             Toast.makeText(applicationContext, R.string.mission_test_done, Toast.LENGTH_SHORT)
                 .show()
         } else {
+            val routine = if (AlarmService.currentIsTimer) null else ringingAlarm?.routinePackage
             AlarmService.dismiss(this)
+            // Launch the after-alarm routine app, if one is configured.
+            routine?.let { pkg ->
+                packageManager.getLaunchIntentForPackage(pkg)?.let { intent ->
+                    runCatching {
+                        startActivity(intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
+                    }
+                }
+            }
         }
         finish()
     }

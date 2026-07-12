@@ -40,6 +40,8 @@ data class Alarm(
     /** SHAKE/STEPS: count. MATH/MEMORY: difficulty 1..3. TYPING: phrase count. */
     val missionLevel: Int = 0,
     val output: Output = Output.DEFAULT,
+    /** App launched after the alarm is stopped ("routine"); null = nothing. */
+    val routinePackage: String? = null,
 ) {
 
     /**
@@ -84,6 +86,7 @@ data class Alarm(
         put("mission", mission.name)
         put("missionLevel", missionLevel)
         put("output", output.name)
+        put("routinePackage", routinePackage ?: JSONObject.NULL)
     }
 
     companion object {
@@ -112,6 +115,11 @@ data class Alarm(
                 output = when (val name = json.optString("output")) {
                     "AUTO" -> Output.DEFAULT
                     else -> runCatching { Output.valueOf(name) }.getOrDefault(Output.DEFAULT)
+                },
+                routinePackage = if (json.isNull("routinePackage")) {
+                    null
+                } else {
+                    json.optString("routinePackage").takeIf { it.isNotBlank() }
                 },
             )
         }
