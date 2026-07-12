@@ -1,10 +1,39 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="primary">#FF6F00</color>
-    <color name="secondary">#5C6BC0</color>
+    <!-- Comfy palette: warm terracotta accent on cream (light) / candle-lit brown (dark) -->
+    <color name="primary">#DD6B20</color>
     <color name="on_primary">#FFFFFF</color>
-    <color name="primary_container">#FFE0B2</color>
-    <color name="on_primary_container">#4A2800</color>
+    <color name="primary_container">#FFE3D1</color>
+    <color name="on_primary_container">#45210A</color>
+    <color name="secondary">#7B78C8</color>
+
+    <!-- Light surfaces -->
+    <color name="surface_light">#FBF4EB</color>
+    <color name="surface_container_lowest_light">#FFFDFA</color>
+    <color name="surface_container_low_light">#F7EEE2</color>
+    <color name="surface_container_light">#F3E8D9</color>
+    <color name="surface_container_high_light">#EDE0CE</color>
+    <color name="surface_container_highest_light">#E7D9C5</color>
+    <color name="on_surface_light">#453A30</color>
+    <color name="on_surface_variant_light">#71614F</color>
+
+    <!-- Dark: warm accent + surfaces -->
+    <color name="primary_dark">#FFB68B</color>
+    <color name="on_primary_dark">#542100</color>
+    <color name="primary_container_dark">#7A3E14</color>
+    <color name="on_primary_container_dark">#FFDCC8</color>
+    <color name="secondary_dark">#A5A3E8</color>
+    <color name="surface_dark">#201B15</color>
+    <color name="surface_container_lowest_dark">#17130E</color>
+    <color name="surface_container_low_dark">#28221B</color>
+    <color name="surface_container_dark">#2D2620</color>
+    <color name="surface_container_high_dark">#383026</color>
+    <color name="surface_container_highest_dark">#443A2E</color>
+    <color name="on_surface_dark">#EFE5D8</color>
+    <color name="on_surface_variant_dark">#C9BAA7</color>
+
     <color name="icon_background">#1A237E</color>
     <color name="ring_background">#101528</color>
+    <!-- The ring screen is always dark: fixed vivid accent regardless of theme -->
+    <color name="ring_accent">#FF8F2E</color>
 </resources>
