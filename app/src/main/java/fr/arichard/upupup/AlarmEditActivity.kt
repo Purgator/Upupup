@@ -290,6 +290,15 @@ class AlarmEditActivity : AppCompatActivity() {
         refreshCards()
         refreshLevels()
 
+        sheet.missionTest.setOnClickListener {
+            if (selected == Mission.NONE) return@setOnClickListener
+            startActivity(
+                Intent(this, RingActivity::class.java)
+                    .putExtra(RingActivity.EXTRA_PREVIEW_MISSION, selected.name)
+                    .putExtra(RingActivity.EXTRA_PREVIEW_LEVEL, level)
+            )
+        }
+
         sheet.missionOk.setOnClickListener {
             draft = draft.copy(mission = selected, missionLevel = level)
             if (selected == Mission.STEPS) requestActivityRecognitionIfNeeded()
@@ -366,13 +375,14 @@ class AlarmEditActivity : AppCompatActivity() {
     }
 
     private fun pickOutput() {
-        val outputs = arrayOf(Output.AUTO, Output.SPEAKER, Output.WIRED, Output.BLUETOOTH)
+        val outputs = arrayOf(Output.DEFAULT, Output.SPEAKER, Output.WIRED, Output.BLUETOOTH)
         val labels = outputs.map { outputName(it) }.toTypedArray()
         MaterialAlertDialogBuilder(this)
             .setTitle(R.string.output_device)
-            .setItems(labels) { _, which ->
+            .setSingleChoiceItems(labels, outputs.indexOf(draft.output)) { dialog, which ->
                 draft = draft.copy(output = outputs[which])
                 updateValues()
+                dialog.dismiss()
             }
             .show()
     }
@@ -418,10 +428,11 @@ class AlarmEditActivity : AppCompatActivity() {
     }
 
     private fun outputName(output: Output): String = when (output) {
-        Output.AUTO -> getString(R.string.output_auto)
-        Output.SPEAKER -> getString(R.string.output_speaker)
-        Output.WIRED -> getString(R.string.output_wired)
-        Output.BLUETOOTH -> getString(R.string.output_bluetooth)
+        Output.DEFAULT -> getString(
+            R.string.output_default,
+            Format.output(this, fr.arichard.upupup.core.Prefs(this).defaultOutput)
+        )
+        else -> Format.output(this, output)
     }
 
     private fun defaultDraft(): Alarm {

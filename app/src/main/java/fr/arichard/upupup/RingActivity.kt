@@ -38,6 +38,7 @@ class RingActivity : AppCompatActivity() {
 
     private var ringingAlarm: fr.arichard.upupup.core.Alarm? = null
     private var snoozeGestureDetector: android.view.GestureDetector? = null
+    private var isPreview = false
 
     private var shakeDetector: ShakeDetector? = null
     private var stepDetector: StepDetector? = null
@@ -68,6 +69,12 @@ class RingActivity : AppCompatActivity() {
                     WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
             )
         }
+        isPreview = intent.hasExtra(EXTRA_PREVIEW_MISSION)
+        if (isPreview) {
+            setupPreview()
+            return
+        }
+
         // The only ways out are the mission, the snooze or the stop button.
         onBackPressedDispatcher.addCallback(this) { /* consume */ }
 
@@ -89,6 +96,34 @@ class RingActivity : AppCompatActivity() {
         ringingAlarm = alarm
         setupSnoozeAction(alarm)
         setupStopSlider()
+    }
+
+    // ---- Preview: try a mission from the editor, no alarm involved ----
+
+    private fun setupPreview() {
+        binding = ActivityRingBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+        binding.ringLabel.text = getString(R.string.test_mission_running)
+        binding.stopSliderContainer.visibility = View.GONE
+
+        val mission = runCatching {
+            Mission.valueOf(intent.getStringExtra(EXTRA_PREVIEW_MISSION)!!)
+        }.getOrDefault(Mission.NONE)
+        val level = intent.getIntExtra(EXTRA_PREVIEW_LEVEL, 1)
+        ringingAlarm = fr.arichard.upupup.core.Alarm(
+            id = -1, hour = 0, minute = 0, mission = mission, missionLevel = level
+        )
+        startMission(mission, level)
+        startSensors()
+    }
+
+    /** A real alarm fired while the preview was open: become the real ring screen. */
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        if (isPreview && AlarmService.current != null) {
+            setIntent(intent)
+            recreate()
+        }
     }
 
     // ---- Stop: slide gate, then the mission (if any) ----
@@ -122,15 +157,19 @@ class RingActivity : AppCompatActivity() {
             return
         }
         binding.stopSliderContainer.visibility = View.GONE
-        when (alarm.mission) {
-            Mission.SHAKE -> setupShake(alarm.missionLevel.coerceAtLeast(10))
-            Mission.MATH -> setupMath(alarm.missionLevel.coerceIn(1, 3))
-            Mission.TYPING -> setupTyping(alarm.missionLevel.coerceIn(1, 3))
-            Mission.STEPS -> setupSteps(alarm.missionLevel.coerceAtLeast(10))
-            Mission.MEMORY -> setupMemory(alarm.missionLevel.coerceIn(1, 3))
+        startMission(alarm.mission, alarm.missionLevel)
+        startSensors()
+    }
+
+    private fun startMission(mission: Mission, level: Int) {
+        when (mission) {
+            Mission.SHAKE -> setupShake(level.coerceAtLeast(10))
+            Mission.MATH -> setupMath(level.coerceIn(1, 3))
+            Mission.TYPING -> setupTyping(level.coerceIn(1, 3))
+            Mission.STEPS -> setupSteps(level.coerceAtLeast(10))
+            Mission.MEMORY -> setupMemory(level.coerceIn(1, 3))
             Mission.NONE -> Unit
         }
-        startSensors()
     }
 
     // ---- Snooze: swipe up or tap button, per app setting ----
@@ -190,7 +229,12 @@ class RingActivity : AppCompatActivity() {
     }
 
     private fun stopAlarm() {
-        AlarmService.dismiss(this)
+        if (isPreview) {
+            Toast.makeText(applicationContext, R.string.mission_test_done, Toast.LENGTH_SHORT)
+                .show()
+        } else {
+            AlarmService.dismiss(this)
+        }
         finish()
     }
 
@@ -428,7 +472,11 @@ class RingActivity : AppCompatActivity() {
         private val TILE_GOOD = Color.parseColor("#4CAF50")
         private val TILE_BAD = Color.parseColor("#E53935")
 
-        val isOpen: Boolean get() = instance?.get() != null
+        const val EXTRA_PREVIEW_MISSION = "preview_mission"
+        const val EXTRA_PREVIEW_LEVEL = "preview_level"
+
+        /** A preview doesn't count: a real ring must still be able to take over. */
+        val isOpen: Boolean get() = instance?.get()?.isPreview == false
 
         /** Called by [AlarmService] when ringing ends for any reason. */
         fun finishIfOpen() {
