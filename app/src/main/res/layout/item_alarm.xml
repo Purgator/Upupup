@@ -46,6 +46,17 @@
                     app:tint="?attr/colorPrimary"
                     tools:src="@drawable/ic_mission_shake" />
 
+                <!-- Shown when the alarm overrides the app-wide sound output -->
+                <ImageView
+                    android:id="@+id/output_icon"
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:layout_marginEnd="5dp"
+                    android:importantForAccessibility="no"
+                    android:visibility="gone"
+                    app:tint="?attr/colorSecondary"
+                    tools:src="@drawable/ic_headphones" />
+
                 <TextView
                     android:id="@+id/alarm_details"
                     android:layout_width="wrap_content"

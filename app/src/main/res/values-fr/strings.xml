@@ -55,12 +55,16 @@
     <string name="phrase_count">Nombre de phrases</string>
     <string name="steps_count">Nombre de pas</string>
     <string name="steps_permission">Autorisez l\'accès à l\'activité physique pour compter vos pas.</string>
+    <string name="test_mission">Essayer</string>
+    <string name="test_mission_running">Test de mission</string>
+    <string name="mission_test_done">Mission réussie !</string>
     <string name="math_easy">facile</string>
     <string name="math_medium">moyen</string>
     <string name="math_hard">difficile</string>
     <string name="shake_count">Nombre de secousses</string>
     <string name="math_difficulty">Difficulté</string>
     <string name="output_device">Sortie audio</string>
+    <string name="output_default">Réglage global (%1$s)</string>
     <string name="output_auto">Automatique</string>
     <string name="output_speaker">Haut-parleur du téléphone</string>
     <string name="output_wired">Casque filaire</string>

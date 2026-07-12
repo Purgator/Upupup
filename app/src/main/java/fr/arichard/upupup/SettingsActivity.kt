@@ -26,6 +26,29 @@ class SettingsActivity : AppCompatActivity() {
         binding.toolbar.setNavigationOnClickListener { finish() }
 
         val prefs = Prefs(this)
+        binding.outputValue.text = fr.arichard.upupup.core.Format.output(this, prefs.defaultOutput)
+        binding.rowOutput.setOnClickListener {
+            val outputs = arrayOf(
+                fr.arichard.upupup.core.Output.AUTO,
+                fr.arichard.upupup.core.Output.SPEAKER,
+                fr.arichard.upupup.core.Output.WIRED,
+                fr.arichard.upupup.core.Output.BLUETOOTH,
+            )
+            com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.output_device)
+                .setSingleChoiceItems(
+                    outputs.map { fr.arichard.upupup.core.Format.output(this, it) }
+                        .toTypedArray(),
+                    outputs.indexOf(prefs.defaultOutput)
+                ) { dialog, which ->
+                    prefs.defaultOutput = outputs[which]
+                    binding.outputValue.text =
+                        fr.arichard.upupup.core.Format.output(this, outputs[which])
+                    dialog.dismiss()
+                }
+                .show()
+        }
+
         binding.swipeSnoozeSwitch.isChecked = prefs.swipeToSnooze
         binding.swipeSnoozeSwitch.setOnCheckedChangeListener { _, checked ->
             prefs.swipeToSnooze = checked

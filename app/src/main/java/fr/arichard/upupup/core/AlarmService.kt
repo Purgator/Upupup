@@ -191,8 +191,10 @@ class AlarmService : Service() {
     }
 
     /** Finds the requested output device, or null to keep the system's default routing. */
-    private fun preferredOutputDevice(output: Output): AudioDeviceInfo? {
-        if (output == Output.AUTO) return null
+    private fun preferredOutputDevice(requested: Output): AudioDeviceInfo? {
+        // Per-alarm override wins; DEFAULT falls back to the app-wide setting.
+        val output = if (requested == Output.DEFAULT) Prefs(this).defaultOutput else requested
+        if (output == Output.AUTO || output == Output.DEFAULT) return null
         val devices = audioManager
             ?.getDevices(AudioManager.GET_DEVICES_OUTPUTS) ?: return null
         val wanted = when (output) {
@@ -203,7 +205,7 @@ class AlarmService : Service() {
                 AudioDeviceInfo.TYPE_USB_HEADSET,
             )
             Output.BLUETOOTH -> intArrayOf(AudioDeviceInfo.TYPE_BLUETOOTH_A2DP)
-            Output.AUTO -> return null
+            Output.AUTO, Output.DEFAULT -> return null
         }
         return devices.firstOrNull { it.type in wanted }
     }

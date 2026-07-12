@@ -7,8 +7,11 @@ import java.util.Calendar
 /** Wake-up mission required to stop the alarm. */
 enum class Mission { NONE, SHAKE, MATH, TYPING, STEPS, MEMORY }
 
-/** Where the alarm sound is routed. */
-enum class Output { AUTO, SPEAKER, WIRED, BLUETOOTH }
+/**
+ * Where the alarm sound is routed. [DEFAULT] means "follow the app-wide setting";
+ * the other values are per-alarm overrides ([AUTO] is only used as a global value).
+ */
+enum class Output { DEFAULT, AUTO, SPEAKER, WIRED, BLUETOOTH }
 
 /**
  * One alarm, everything included. Persisted as JSON in SharedPreferences —
@@ -34,9 +37,9 @@ data class Alarm(
     /** Max snoozes per ring; 0 = unlimited. */
     val maxSnoozes: Int = 0,
     val mission: Mission = Mission.NONE,
-    /** SHAKE: number of shakes. MATH: difficulty 1..3. */
+    /** SHAKE/STEPS: count. MATH/MEMORY: difficulty 1..3. TYPING: phrase count. */
     val missionLevel: Int = 0,
-    val output: Output = Output.AUTO,
+    val output: Output = Output.DEFAULT,
 ) {
 
     /**
@@ -104,8 +107,12 @@ data class Alarm(
                 mission = runCatching { Mission.valueOf(json.optString("mission")) }
                     .getOrDefault(Mission.NONE),
                 missionLevel = json.optInt("missionLevel", 0),
-                output = runCatching { Output.valueOf(json.optString("output")) }
-                    .getOrDefault(Output.AUTO),
+                // Legacy alarms stored AUTO (the old default): they now follow the
+                // global setting, whose default is AUTO — same behaviour as before.
+                output = when (val name = json.optString("output")) {
+                    "AUTO" -> Output.DEFAULT
+                    else -> runCatching { Output.valueOf(name) }.getOrDefault(Output.DEFAULT)
+                },
             )
         }
     }
