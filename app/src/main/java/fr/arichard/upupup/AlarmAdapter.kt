@@ -17,6 +17,9 @@ class AlarmAdapter(
 
     private var alarms: List<Alarm> = emptyList()
 
+    /** App-wide sound output, shown on cards whose alarm follows the default. */
+    var defaultOutput: fr.arichard.upupup.core.Output = fr.arichard.upupup.core.Output.AUTO
+
     fun submit(list: List<Alarm>) {
         alarms = list
         @Suppress("NotifyDataSetChanged") // lists are tiny; diffing is not worth it
@@ -66,14 +69,15 @@ class AlarmAdapter(
             }
             binding.alarmDetails.text = parts.joinToString(" · ")
 
-            binding.outputIcon.visibility =
-                if (alarm.output == fr.arichard.upupup.core.Output.DEFAULT) {
-                    android.view.View.GONE
-                } else {
-                    android.view.View.VISIBLE
-                }
+            // Always show where this alarm will ring: its override, or the app default.
+            val effectiveOutput = if (alarm.output == fr.arichard.upupup.core.Output.DEFAULT) {
+                defaultOutput
+            } else {
+                alarm.output
+            }
+            binding.outputIcon.visibility = android.view.View.VISIBLE
             binding.outputIcon.setImageResource(
-                when (alarm.output) {
+                when (effectiveOutput) {
                     fr.arichard.upupup.core.Output.SPEAKER -> R.drawable.ic_speaker
                     fr.arichard.upupup.core.Output.WIRED -> R.drawable.ic_headphones
                     fr.arichard.upupup.core.Output.BLUETOOTH -> R.drawable.ic_bluetooth

@@ -109,6 +109,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun refreshAlarms() {
         val alarms = store.all()
+        adapter.defaultOutput = Prefs(this).defaultOutput
         adapter.submit(alarms)
         binding.emptyView.visibility =
             if (alarms.isEmpty() && binding.tabs.selectedTabPosition == 0) View.VISIBLE
