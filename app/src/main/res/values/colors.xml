@@ -36,4 +36,6 @@
     <color name="ring_background">#101528</color>
     <!-- The ring screen is always dark: fixed vivid accent regardless of theme -->
     <color name="ring_accent">#FF8F2E</color>
+    <!-- Translucent fill that rises with shake/step progress -->
+    <color name="ring_fill">#4DFF8F2E</color>
 </resources>
