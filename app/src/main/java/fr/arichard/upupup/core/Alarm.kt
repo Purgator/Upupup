@@ -14,6 +14,13 @@ enum class Mission { NONE, SHAKE, MATH, TYPING, STEPS, MEMORY }
 enum class Output { DEFAULT, AUTO, SPEAKER, WIRED, BLUETOOTH }
 
 /**
+ * What to do right after the alarm is stopped ("routine").
+ * [value] carries the app package ([APP]), spoken text ([SPEAK]) or the
+ * assistant/search query ([ASSISTANT]); unused for [NONE].
+ */
+enum class RoutineType { NONE, APP, SPEAK, ASSISTANT }
+
+/**
  * One alarm, everything included. Persisted as JSON in SharedPreferences —
  * a handful of alarms doesn't justify a database.
  */
@@ -40,8 +47,10 @@ data class Alarm(
     /** SHAKE/STEPS: count. MATH/MEMORY: difficulty 1..3. TYPING: phrase count. */
     val missionLevel: Int = 0,
     val output: Output = Output.DEFAULT,
-    /** App launched after the alarm is stopped ("routine"); null = nothing. */
-    val routinePackage: String? = null,
+    /** Action run after the alarm is stopped. */
+    val routineType: RoutineType = RoutineType.NONE,
+    /** Package / spoken text / query for [routineType]; null for NONE. */
+    val routineValue: String? = null,
 ) {
 
     /**
@@ -86,7 +95,8 @@ data class Alarm(
         put("mission", mission.name)
         put("missionLevel", missionLevel)
         put("output", output.name)
-        put("routinePackage", routinePackage ?: JSONObject.NULL)
+        put("routineType", routineType.name)
+        put("routineValue", routineValue ?: JSONObject.NULL)
     }
 
     companion object {
@@ -116,10 +126,22 @@ data class Alarm(
                     "AUTO" -> Output.DEFAULT
                     else -> runCatching { Output.valueOf(name) }.getOrDefault(Output.DEFAULT)
                 },
-                routinePackage = if (json.isNull("routinePackage")) {
-                    null
-                } else {
-                    json.optString("routinePackage").takeIf { it.isNotBlank() }
+                // Legacy field routinePackage → an APP routine with that package.
+                routineType = when {
+                    json.has("routineType") ->
+                        runCatching { RoutineType.valueOf(json.optString("routineType")) }
+                            .getOrDefault(RoutineType.NONE)
+                    !json.isNull("routinePackage") &&
+                        json.optString("routinePackage").isNotBlank() -> RoutineType.APP
+                    else -> RoutineType.NONE
+                },
+                routineValue = when {
+                    json.has("routineType") ->
+                        if (json.isNull("routineValue")) null
+                        else json.optString("routineValue").takeIf { it.isNotBlank() }
+                    !json.isNull("routinePackage") ->
+                        json.optString("routinePackage").takeIf { it.isNotBlank() }
+                    else -> null
                 },
             )
         }
