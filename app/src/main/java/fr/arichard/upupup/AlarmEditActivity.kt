@@ -19,6 +19,7 @@ import fr.arichard.upupup.core.AlarmStore
 import fr.arichard.upupup.core.Format
 import fr.arichard.upupup.core.Mission
 import fr.arichard.upupup.core.Output
+import fr.arichard.upupup.core.RoutineType
 import fr.arichard.upupup.databinding.ActivityAlarmEditBinding
 import java.text.DateFormatSymbols
 import java.util.Calendar
@@ -84,13 +85,8 @@ class AlarmEditActivity : AppCompatActivity() {
             }
         }
 
-        binding.timePicker.setIs24HourView(android.text.format.DateFormat.is24HourFormat(this))
-        binding.timePicker.hour = draft.hour
-        binding.timePicker.minute = draft.minute
-        binding.timePicker.setOnTimeChangedListener { _, hour, minute ->
-            draft = draft.copy(hour = hour, minute = minute)
-            updateRingsInPreview()
-        }
+        updateTimeDisplay()
+        binding.timeDisplay.setOnClickListener { pickTime() }
 
         buildDayToggles()
         binding.labelInput.setText(draft.label)
@@ -140,6 +136,35 @@ class AlarmEditActivity : AppCompatActivity() {
         finish()
     }
 
+    // ---- Time picker ----
+
+    private fun pickTime() {
+        val is24h = android.text.format.DateFormat.is24HourFormat(this)
+        val picker = com.google.android.material.timepicker.MaterialTimePicker.Builder()
+            .setTimeFormat(
+                if (is24h) com.google.android.material.timepicker.TimeFormat.CLOCK_24H
+                else com.google.android.material.timepicker.TimeFormat.CLOCK_12H
+            )
+            .setHour(draft.hour)
+            .setMinute(draft.minute)
+            .setInputMode(
+                com.google.android.material.timepicker.MaterialTimePicker.INPUT_MODE_CLOCK
+            )
+            .setTitleText(R.string.set_time)
+            .build()
+        picker.addOnPositiveButtonClickListener {
+            draft = draft.copy(hour = picker.hour, minute = picker.minute)
+            updateTimeDisplay()
+            updateRingsInPreview()
+        }
+        picker.show(supportFragmentManager, "time")
+    }
+
+    private fun updateTimeDisplay() {
+        binding.timeDisplay.text =
+            String.format(java.util.Locale.ROOT, "%02d:%02d", draft.hour, draft.minute)
+    }
+
     // ---- Unsaved-changes guard ----
 
     /** One localized "Field: old → new" line per difference between open and now. */
@@ -185,8 +210,8 @@ class AlarmEditActivity : AppCompatActivity() {
         if (old.output != new.output) {
             add(R.string.output_device, outputName(old.output), outputName(new.output))
         }
-        if (old.routinePackage != new.routinePackage) {
-            add(R.string.routine, routineName(old.routinePackage), routineName(new.routinePackage))
+        if (old.routineType != new.routineType || old.routineValue != new.routineValue) {
+            add(R.string.routine, routineName(old), routineName(new))
         }
         return lines
     }
@@ -466,9 +491,36 @@ class AlarmEditActivity : AppCompatActivity() {
             .show()
     }
 
-    // ---- Routine (app launched after the alarm is stopped) ----
+    // ---- Routine (action run after the alarm is stopped) ----
 
     private fun pickRoutine() {
+        val types = arrayOf(
+            RoutineType.NONE, RoutineType.APP, RoutineType.SPEAK, RoutineType.ASSISTANT
+        )
+        val labels = arrayOf(
+            getString(R.string.routine_none),
+            getString(R.string.routine_type_app),
+            getString(R.string.routine_type_speak),
+            getString(R.string.routine_type_assistant),
+        )
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.routine)
+            .setItems(labels) { _, which ->
+                when (types[which]) {
+                    RoutineType.NONE -> {
+                        draft = draft.copy(routineType = RoutineType.NONE, routineValue = null)
+                        updateValues()
+                    }
+                    RoutineType.APP -> pickRoutineApp()
+                    RoutineType.SPEAK -> pickRoutineText(RoutineType.SPEAK, R.string.routine_speak_hint)
+                    RoutineType.ASSISTANT ->
+                        pickRoutineText(RoutineType.ASSISTANT, R.string.routine_assistant_hint)
+                }
+            }
+            .show()
+    }
+
+    private fun pickRoutineApp() {
         val pm = packageManager
         val apps = pm.queryIntentActivities(
             Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER), 0
@@ -477,27 +529,62 @@ class AlarmEditActivity : AppCompatActivity() {
             .filter { it.first != packageName }
             .distinctBy { it.first }
             .sortedBy { it.second.lowercase() }
-        val labels =
-            (listOf(getString(R.string.routine_none)) + apps.map { it.second }).toTypedArray()
         MaterialAlertDialogBuilder(this)
-            .setTitle(R.string.routine)
-            .setItems(labels) { _, which ->
-                draft = draft.copy(
-                    routinePackage = if (which == 0) null else apps[which - 1].first
-                )
+            .setTitle(R.string.routine_type_app)
+            .setItems(apps.map { it.second }.toTypedArray()) { _, which ->
+                draft = draft.copy(routineType = RoutineType.APP, routineValue = apps[which].first)
                 updateValues()
             }
             .show()
     }
 
-    private fun routineName(packageName: String?): String {
-        packageName ?: return getString(R.string.routine_none)
-        val label = runCatching {
-            packageManager.getApplicationLabel(
-                packageManager.getApplicationInfo(packageName, 0)
-            ).toString()
-        }.getOrDefault(packageName)
-        return getString(R.string.routine_open, label)
+    /** Free-text routine value (phrase to speak, or query to ask the assistant). */
+    private fun pickRoutineText(type: RoutineType, hintRes: Int) {
+        val input = com.google.android.material.textfield.TextInputEditText(this).apply {
+            setHint(hintRes)
+            setText(draft.routineValue.takeIf { draft.routineType == type })
+            setSingleLine()
+        }
+        val pad = (resources.displayMetrics.density * 20).toInt()
+        val container = android.widget.FrameLayout(this).apply {
+            setPadding(pad, pad / 2, pad, 0)
+            addView(input)
+        }
+        MaterialAlertDialogBuilder(this)
+            .setTitle(if (type == RoutineType.SPEAK) R.string.routine_type_speak
+                else R.string.routine_type_assistant)
+            .setView(container)
+            .setPositiveButton(R.string.save) { _, _ ->
+                val text = input.text?.toString()?.trim().orEmpty()
+                draft = if (text.isEmpty()) {
+                    draft.copy(routineType = RoutineType.NONE, routineValue = null)
+                } else {
+                    draft.copy(routineType = type, routineValue = text)
+                }
+                updateValues()
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
+    private fun routineName(alarm: Alarm): String = when (alarm.routineType) {
+        RoutineType.NONE -> getString(R.string.routine_none)
+        RoutineType.APP -> {
+            val pkg = alarm.routineValue
+            if (pkg == null) {
+                getString(R.string.routine_none)
+            } else {
+                val label = runCatching {
+                    packageManager.getApplicationLabel(
+                        packageManager.getApplicationInfo(pkg, 0)
+                    ).toString()
+                }.getOrDefault(pkg)
+                getString(R.string.routine_open, label)
+            }
+        }
+        RoutineType.SPEAK -> getString(R.string.routine_speak_desc, alarm.routineValue ?: "")
+        RoutineType.ASSISTANT ->
+            getString(R.string.routine_assistant_desc, alarm.routineValue ?: "")
     }
 
     // ---- Display ----
@@ -507,7 +594,7 @@ class AlarmEditActivity : AppCompatActivity() {
         binding.soundValue.text = soundName(draft)
         binding.snoozeValue.text = snoozeName(draft)
         binding.outputValue.text = outputName(draft.output)
-        binding.routineValue.text = routineName(draft.routinePackage)
+        binding.routineValue.text = routineName(draft)
         updateRingsInPreview()
     }
 
