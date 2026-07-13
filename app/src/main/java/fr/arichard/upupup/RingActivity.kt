@@ -43,6 +43,7 @@ class RingActivity : AppCompatActivity() {
     private var shakeDetector: ShakeDetector? = null
     private var stepDetector: StepDetector? = null
     private var countLeft = 0
+    private var countMax = 0
 
     private var mathSolved = 0
     private var mathAnswer = 0
@@ -95,7 +96,34 @@ class RingActivity : AppCompatActivity() {
 
         ringingAlarm = alarm
         setupSnoozeAction(alarm)
-        setupStopSlider()
+        setupStopAction(alarm)
+    }
+
+    /**
+     * Mission-less alarms stop with a slide gesture; alarms with a mission show a big
+     * button that launches the challenge (completing it is what stops the alarm).
+     */
+    private fun setupStopAction(alarm: fr.arichard.upupup.core.Alarm) {
+        if (alarm.mission == Mission.NONE) {
+            binding.stopSliderContainer.visibility = View.VISIBLE
+            setupStopSlider()
+        } else {
+            binding.startMissionButton.visibility = View.VISIBLE
+            binding.startMissionButton.setIconResource(missionIcon(alarm.mission))
+            binding.startMissionButton.setOnClickListener {
+                binding.startMissionButton.visibility = View.GONE
+                startMission(alarm.mission, alarm.missionLevel)
+                startSensors()
+            }
+        }
+    }
+
+    private fun missionIcon(mission: Mission): Int = when (mission) {
+        Mission.SHAKE -> R.drawable.ic_mission_shake
+        Mission.MATH -> R.drawable.ic_mission_math
+        Mission.TYPING -> R.drawable.ic_mission_typing
+        Mission.STEPS -> R.drawable.ic_mission_steps
+        Mission.MEMORY, Mission.NONE -> R.drawable.ic_mission_memory
     }
 
     // ---- Preview: try a mission from the editor, no alarm involved ----
@@ -177,12 +205,13 @@ class RingActivity : AppCompatActivity() {
     private fun setupSnoozeAction(alarm: fr.arichard.upupup.core.Alarm) {
         if (!AlarmService.canSnooze(this)) return
         if (fr.arichard.upupup.core.Prefs(this).swipeToSnooze) {
-            binding.swipeHint.visibility = View.VISIBLE
+            binding.swipeHelper.visibility = View.VISIBLE
             binding.swipeHint.text = if (AlarmService.currentIsTimer) {
                 getString(R.string.swipe_snooze_hint_timer)
             } else {
                 getString(R.string.swipe_snooze_hint, alarm.snoozeMinutes)
             }
+            animateSwipeHelper()
             snoozeGestureDetector = android.view.GestureDetector(
                 this,
                 object : android.view.GestureDetector.SimpleOnGestureListener() {
@@ -211,6 +240,19 @@ class RingActivity : AppCompatActivity() {
         }
     }
 
+    /** Looping upward bob of the swipe-up hint so the gesture is obvious. */
+    private fun animateSwipeHelper() {
+        val distance = resources.displayMetrics.density * 22
+        android.animation.ObjectAnimator.ofFloat(
+            binding.swipeHelper, View.TRANSLATION_Y, 0f, -distance, 0f
+        ).apply {
+            duration = 1_400
+            repeatCount = android.animation.ValueAnimator.INFINITE
+            interpolator = android.view.animation.AccelerateDecelerateInterpolator()
+            start()
+        }
+    }
+
     private fun doSnooze() {
         val alarm = ringingAlarm ?: return
         val until = System.currentTimeMillis() + alarm.snoozeMinutes * 60_000L
@@ -233,15 +275,14 @@ class RingActivity : AppCompatActivity() {
             Toast.makeText(applicationContext, R.string.mission_test_done, Toast.LENGTH_SHORT)
                 .show()
         } else {
-            val routine = if (AlarmService.currentIsTimer) null else ringingAlarm?.routinePackage
+            val alarm = ringingAlarm
+            val isTimer = AlarmService.currentIsTimer
             AlarmService.dismiss(this)
-            // Launch the after-alarm routine app, if one is configured.
-            routine?.let { pkg ->
-                packageManager.getLaunchIntentForPackage(pkg)?.let { intent ->
-                    runCatching {
-                        startActivity(intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
-                    }
-                }
+            // Run the after-alarm routine, if one is configured (never for the timer).
+            if (alarm != null && !isTimer) {
+                fr.arichard.upupup.core.RoutineRunner.run(
+                    this, alarm.routineType, alarm.routineValue
+                )
             }
         }
         finish()
@@ -272,17 +313,42 @@ class RingActivity : AppCompatActivity() {
         binding.counterContainer.visibility = View.VISIBLE
         binding.counterInstruction.text = instruction
         countLeft = count
-        binding.counterProgress.max = count
-        binding.counterProgress.progress = 0
+        countMax = count
         binding.counterValue.text = countLeft.toString()
+        updateFill()
     }
 
     private fun onCountEvent() {
         if (countLeft <= 0) return
         countLeft--
-        binding.counterProgress.progress = binding.counterProgress.max - countLeft
         binding.counterValue.text = countLeft.toString()
+        blip() // haptic feedback so the shake/step registers even eyes-closed
+        updateFill()
         if (countLeft == 0) stopAlarm()
+    }
+
+    /** Grows the colour fill from the bottom in step with the remaining count. */
+    private fun updateFill() {
+        if (countMax <= 0) return
+        val fill = binding.progressFill
+        val fraction = (countMax - countLeft).toFloat() / countMax
+        val target = (binding.ringRoot.height * fraction).toInt()
+        android.animation.ValueAnimator.ofInt(fill.height, target).apply {
+            duration = 200
+            addUpdateListener {
+                fill.layoutParams = fill.layoutParams.apply { height = it.animatedValue as Int }
+            }
+        }.start()
+    }
+
+    /** Short vibration pulse to confirm a shake/step was counted. */
+    private fun blip() {
+        val vibrator = getSystemService(android.os.Vibrator::class.java) ?: return
+        vibrator.vibrate(
+            android.os.VibrationEffect.createOneShot(
+                45, android.os.VibrationEffect.DEFAULT_AMPLITUDE
+            )
+        )
     }
 
     override fun onResume() {

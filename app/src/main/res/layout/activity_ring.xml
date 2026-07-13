@@ -1,241 +1,276 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/ring_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/bg_ring"
-    android:gravity="center_horizontal"
-    android:orientation="vertical"
-    android:padding="24dp">
+    android:background="@drawable/bg_ring">
 
-    <TextClock
-        android:id="@+id/clock"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="32dp"
-        android:fontFamily="sans-serif-thin"
-        android:textColor="@android:color/white"
-        android:textSize="68sp" />
-
-    <TextView
-        android:id="@+id/ring_label"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
-        android:textColor="#9FA8DA"
-        android:textSize="18sp"
-        tools:text="Wake up!" />
-
-    <!-- Shared progress line for all missions ("2 of 3") -->
-    <TextView
-        android:id="@+id/mission_progress"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
-        android:textColor="#9FA8DA"
-        android:textSize="14sp"
-        android:visibility="gone"
-        tools:text="Problem 1 of 3" />
-
-    <!-- Counter mission (shake / steps) -->
-    <LinearLayout
-        android:id="@+id/counter_container"
+    <!-- Rises from the bottom as the shake/step count progresses -->
+    <View
+        android:id="@+id/progress_fill"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:gravity="center_horizontal"
-        android:orientation="vertical"
-        android:visibility="gone">
-
-        <TextView
-            android:id="@+id/counter_instruction"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textColor="@android:color/white"
-            android:textSize="24sp"
-            android:textStyle="bold"
-            tools:text="Shake your phone!" />
-
-        <TextView
-            android:id="@+id/counter_value"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:fontFamily="sans-serif-thin"
-            android:textColor="@color/ring_accent"
-            android:textSize="88sp"
-            tools:text="15" />
-
-        <ProgressBar
-            android:id="@+id/counter_progress"
-            style="?android:attr/progressBarStyleHorizontal"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp" />
-    </LinearLayout>
-
-    <!-- Math mission -->
-    <LinearLayout
-        android:id="@+id/math_container"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:gravity="center_horizontal"
-        android:orientation="vertical"
-        android:visibility="gone">
-
-        <TextView
-            android:id="@+id/math_problem"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:textColor="@android:color/white"
-            android:textSize="36sp"
-            tools:text="17 + 24 × 3" />
-
-        <TextView
-            android:id="@+id/math_answer"
-            android:layout_width="180dp"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:background="#22FFFFFF"
-            android:gravity="center"
-            android:minHeight="48dp"
-            android:textColor="@color/ring_accent"
-            android:textSize="32sp"
-            tools:text="89" />
-
-        <GridLayout
-            android:id="@+id/keypad"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:columnCount="3" />
-    </LinearLayout>
-
-    <!-- Typing mission -->
-    <LinearLayout
-        android:id="@+id/typing_container"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:gravity="center_horizontal"
-        android:orientation="vertical"
-        android:visibility="gone">
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/typing_instruction"
-            android:textColor="#9FA8DA"
-            android:textSize="14sp" />
-
-        <TextView
-            android:id="@+id/typing_phrase"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:background="#22FFFFFF"
-            android:gravity="center"
-            android:padding="16dp"
-            android:textColor="@android:color/white"
-            android:textSize="20sp"
-            tools:text="The early bird catches the worm" />
-
-        <EditText
-            android:id="@+id/typing_input"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:hint="@string/typing_hint"
-            android:importantForAutofill="no"
-            android:imeOptions="actionDone"
-            android:inputType="textNoSuggestions|textVisiblePassword"
-            android:maxLines="2"
-            android:textColor="@android:color/white"
-            android:textColorHint="#66FFFFFF"
-            android:textSize="18sp" />
-    </LinearLayout>
-
-    <!-- Memory mission (Simon-style 3×3 grid) -->
-    <LinearLayout
-        android:id="@+id/memory_container"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:gravity="center_horizontal"
-        android:orientation="vertical"
-        android:visibility="gone">
-
-        <TextView
-            android:id="@+id/memory_status"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/memory_watch"
-            android:textColor="@android:color/white"
-            android:textSize="18sp" />
-
-        <GridLayout
-            android:id="@+id/memory_grid"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:columnCount="3" />
-    </LinearLayout>
-
-    <Space
-        android:layout_width="0dp"
         android:layout_height="0dp"
-        android:layout_weight="1" />
+        android:layout_gravity="bottom"
+        android:background="@color/ring_fill" />
 
-    <!-- Snooze: either a swipe-up hint or a tap button, per the app setting -->
-    <TextView
-        android:id="@+id/swipe_hint"
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="12dp"
-        android:gravity="center"
-        android:textColor="#9FA8DA"
-        android:textSize="15sp"
-        android:visibility="gone"
-        tools:text="↑ Swipe up to snooze (5 min)" />
+        android:layout_height="match_parent"
+        android:gravity="center_horizontal"
+        android:orientation="vertical"
+        android:padding="24dp">
 
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/snooze_button"
-        style="@style/Widget.Material3.Button.TextButton"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="8dp"
-        android:textColor="#9FA8DA"
-        android:visibility="gone"
-        tools:text="Snooze 5 min" />
-
-    <!-- Slide to stop: completing the slide stops the alarm, or starts the mission -->
-    <FrameLayout
-        android:id="@+id/stop_slider_container"
-        android:layout_width="match_parent"
-        android:layout_height="68dp">
+        <TextClock
+            android:id="@+id/clock"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="32dp"
+            android:fontFamily="sans-serif-thin"
+            android:textColor="@android:color/white"
+            android:textSize="68sp" />
 
         <TextView
-            android:id="@+id/slide_label"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:gravity="center"
-            android:importantForAccessibility="no"
-            android:text="@string/slide_to_stop"
-            android:textColor="#B8BFE8"
-            android:textSize="16sp" />
+            android:id="@+id/ring_label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:textColor="#9FA8DA"
+            android:textSize="18sp"
+            tools:text="Wake up!" />
 
-        <SeekBar
-            android:id="@+id/stop_slider"
+        <!-- Shared progress line for all missions ("2 of 3") -->
+        <TextView
+            android:id="@+id/mission_progress"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:textColor="#9FA8DA"
+            android:textSize="14sp"
+            android:visibility="gone"
+            tools:text="Problem 1 of 3" />
+
+        <!-- Counter mission (shake / steps) -->
+        <LinearLayout
+            android:id="@+id/counter_container"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:background="@drawable/slider_track"
-            android:max="100"
-            android:paddingStart="8dp"
-            android:paddingEnd="8dp"
-            android:progressDrawable="@android:color/transparent"
-            android:splitTrack="false"
-            android:thumb="@drawable/slider_thumb" />
-    </FrameLayout>
-</LinearLayout>
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:gravity="center_horizontal"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/counter_instruction"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@android:color/white"
+                android:textSize="24sp"
+                android:textStyle="bold"
+                tools:text="Shake your phone!" />
+
+            <TextView
+                android:id="@+id/counter_value"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:fontFamily="sans-serif-thin"
+                android:textColor="@color/ring_accent"
+                android:textSize="88sp"
+                tools:text="15" />
+        </LinearLayout>
+
+        <!-- Math mission -->
+        <LinearLayout
+            android:id="@+id/math_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_horizontal"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/math_problem"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:textColor="@android:color/white"
+                android:textSize="36sp"
+                tools:text="17 + 24 × 3" />
+
+            <TextView
+                android:id="@+id/math_answer"
+                android:layout_width="180dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:background="#22FFFFFF"
+                android:gravity="center"
+                android:minHeight="48dp"
+                android:textColor="@color/ring_accent"
+                android:textSize="32sp"
+                tools:text="89" />
+
+            <GridLayout
+                android:id="@+id/keypad"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:columnCount="3" />
+        </LinearLayout>
+
+        <!-- Typing mission -->
+        <LinearLayout
+            android:id="@+id/typing_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:gravity="center_horizontal"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/typing_instruction"
+                android:textColor="#9FA8DA"
+                android:textSize="14sp" />
+
+            <TextView
+                android:id="@+id/typing_phrase"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:background="#22FFFFFF"
+                android:gravity="center"
+                android:padding="16dp"
+                android:textColor="@android:color/white"
+                android:textSize="20sp"
+                tools:text="The early bird catches the worm" />
+
+            <EditText
+                android:id="@+id/typing_input"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:hint="@string/typing_hint"
+                android:importantForAutofill="no"
+                android:imeOptions="actionDone"
+                android:inputType="textNoSuggestions|textVisiblePassword"
+                android:maxLines="2"
+                android:textColor="@android:color/white"
+                android:textColorHint="#66FFFFFF"
+                android:textSize="18sp" />
+        </LinearLayout>
+
+        <!-- Memory mission (Simon-style 3×3 grid) -->
+        <LinearLayout
+            android:id="@+id/memory_container"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:gravity="center_horizontal"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/memory_status"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/memory_watch"
+                android:textColor="@android:color/white"
+                android:textSize="18sp" />
+
+            <GridLayout
+                android:id="@+id/memory_grid"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:columnCount="3" />
+        </LinearLayout>
+
+        <Space
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+
+        <!-- Big animated swipe-up-to-snooze helper -->
+        <LinearLayout
+            android:id="@+id/swipe_helper"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <ImageView
+                android:id="@+id/swipe_chevron"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:importantForAccessibility="no"
+                app:srcCompat="@drawable/ic_chevron_up"
+                app:tint="#B8BFE8" />
+
+            <TextView
+                android:id="@+id/swipe_hint"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="#9FA8DA"
+                android:textSize="16sp"
+                tools:text="Swipe up to snooze (5 min)" />
+        </LinearLayout>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/snooze_button"
+            style="@style/Widget.Material3.Button.TextButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:textColor="#9FA8DA"
+            android:visibility="gone"
+            tools:text="Snooze 5 min" />
+
+        <!-- Big button to start the mission (shown when a mission is set) -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/start_mission_button"
+            android:layout_width="match_parent"
+            android:layout_height="76dp"
+            android:text="@string/start_mission"
+            android:textSize="20sp"
+            android:visibility="gone"
+            app:cornerRadius="38dp"
+            app:icon="@drawable/ic_mission_shake"
+            app:iconGravity="textStart" />
+
+        <!-- Slide to stop: mission-less alarms only -->
+        <FrameLayout
+            android:id="@+id/stop_slider_container"
+            android:layout_width="match_parent"
+            android:layout_height="68dp"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/slide_label"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:importantForAccessibility="no"
+                android:text="@string/slide_to_stop"
+                android:textColor="#B8BFE8"
+                android:textSize="16sp" />
+
+            <SeekBar
+                android:id="@+id/stop_slider"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@drawable/slider_track"
+                android:max="100"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                android:progressDrawable="@android:color/transparent"
+                android:splitTrack="false"
+                android:thumb="@drawable/slider_thumb" />
+        </FrameLayout>
+    </LinearLayout>
+</FrameLayout>
