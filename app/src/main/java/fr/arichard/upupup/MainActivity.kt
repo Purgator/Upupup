@@ -20,11 +20,11 @@ import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.google.android.material.tabs.TabLayout
 import fr.arichard.upupup.core.AlarmScheduler
 import fr.arichard.upupup.core.AlarmStore
 import fr.arichard.upupup.core.Format
 import fr.arichard.upupup.core.Prefs
+import fr.arichard.upupup.core.StopwatchStore
 import fr.arichard.upupup.core.TimerStore
 import fr.arichard.upupup.core.UpdateManager
 import fr.arichard.upupup.databinding.ActivityMainBinding
@@ -34,15 +34,19 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var store: AlarmStore
     private lateinit var timerStore: TimerStore
+    private lateinit var stopwatchStore: StopwatchStore
     private lateinit var adapter: AlarmAdapter
+    private lateinit var lapAdapter: LapAdapter
     private val handler = Handler(Looper.getMainLooper())
+    private var selectedTab = R.id.nav_alarms
 
     private val ticker = object : Runnable {
         override fun run() {
             RingActivity.openIfRinging(this@MainActivity)
             updateNextAlarmBanner()
             updateTimerViews()
-            handler.postDelayed(this, 1_000)
+            updateStopwatch()
+            handler.postDelayed(this, if (stopwatchStore.running) 60 else 1_000)
         }
     }
 
@@ -54,6 +58,7 @@ class MainActivity : AppCompatActivity() {
 
         store = AlarmStore(this)
         timerStore = TimerStore(this)
+        stopwatchStore = StopwatchStore(this)
 
         adapter = AlarmAdapter(
             onClick = { alarm ->
@@ -79,13 +84,13 @@ class MainActivity : AppCompatActivity() {
             startActivity(Intent(this, AlarmEditActivity::class.java))
         }
 
-        binding.tabs.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
-            override fun onTabSelected(tab: TabLayout.Tab) = showTab(tab.position)
-            override fun onTabUnselected(tab: TabLayout.Tab) = Unit
-            override fun onTabReselected(tab: TabLayout.Tab) = Unit
-        })
+        binding.bottomNav.setOnItemSelectedListener { item ->
+            showTab(item.itemId)
+            true
+        }
 
         setupTimerTab()
+        setupStopwatchTab()
         requestNeededPermissions()
 
         // Daily auto-update check, off the main thread.
@@ -97,6 +102,8 @@ class MainActivity : AppCompatActivity() {
         RingActivity.openIfRinging(this)
         refreshAlarms()
         updateTimerViews()
+        updateStopwatch()
+        lapAdapter.submit(stopwatchStore.laps())
         handler.post(ticker)
     }
 
@@ -112,7 +119,7 @@ class MainActivity : AppCompatActivity() {
         adapter.defaultOutput = Prefs(this).defaultOutput
         adapter.submit(alarms)
         binding.emptyView.visibility =
-            if (alarms.isEmpty() && binding.tabs.selectedTabPosition == 0) View.VISIBLE
+            if (alarms.isEmpty() && selectedTab == R.id.nav_alarms) View.VISIBLE
             else View.GONE
         updateNextAlarmBanner()
     }
@@ -238,13 +245,54 @@ class MainActivity : AppCompatActivity() {
         )
     }
 
+    // ---- Stopwatch tab ----
+
+    private fun setupStopwatchTab() {
+        lapAdapter = LapAdapter()
+        binding.lapList.layoutManager = LinearLayoutManager(this)
+        binding.lapList.adapter = lapAdapter
+
+        binding.stopwatchToggle.setOnClickListener {
+            if (stopwatchStore.running) stopwatchStore.pause() else stopwatchStore.start()
+            handler.removeCallbacks(ticker)
+            handler.post(ticker)
+            updateStopwatch()
+        }
+        binding.stopwatchLap.setOnClickListener {
+            if (stopwatchStore.running) {
+                stopwatchStore.addLap()
+                lapAdapter.submit(stopwatchStore.laps())
+            } else {
+                stopwatchStore.reset()
+                lapAdapter.submit(emptyList())
+                updateStopwatch()
+            }
+        }
+    }
+
+    private fun updateStopwatch() {
+        val running = stopwatchStore.running
+        binding.stopwatchDisplay.text = Format.stopwatch(stopwatchStore.elapsed())
+        binding.stopwatchToggle.text =
+            getString(if (running) R.string.stopwatch_pause else R.string.timer_start)
+        // While running the secondary button laps; while paused it resets.
+        binding.stopwatchLap.text =
+            getString(if (running) R.string.stopwatch_lap else R.string.stopwatch_reset)
+        binding.stopwatchLap.isEnabled = running || stopwatchStore.elapsed() > 0
+    }
+
     // ---- Tabs ----
 
-    private fun showTab(position: Int) {
-        val alarms = position == 0
-        binding.alarmsContent.visibility = if (alarms) View.VISIBLE else View.GONE
-        binding.timerContent.visibility = if (alarms) View.GONE else View.VISIBLE
-        if (alarms) binding.fabAdd.show() else binding.fabAdd.hide()
+    private fun showTab(id: Int) {
+        selectedTab = id
+        binding.alarmsContent.visibility =
+            if (id == R.id.nav_alarms) View.VISIBLE else View.GONE
+        binding.timerContent.visibility =
+            if (id == R.id.nav_timer) View.VISIBLE else View.GONE
+        binding.stopwatchContent.visibility =
+            if (id == R.id.nav_stopwatch) View.VISIBLE else View.GONE
+        if (id == R.id.nav_alarms) binding.fabAdd.show() else binding.fabAdd.hide()
+        if (id == R.id.nav_stopwatch) lapAdapter.submit(stopwatchStore.laps())
         refreshAlarms()
     }
 
