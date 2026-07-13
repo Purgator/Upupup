@@ -23,6 +23,20 @@ object Format {
         }
     }
 
+    /** Stopwatch elapsed time: "mm:ss.d", or "h:mm:ss.d" past an hour. */
+    fun stopwatch(millis: Long): String {
+        val tenths = millis / 100 % 10
+        val totalSeconds = millis / 1000
+        val seconds = totalSeconds % 60
+        val minutes = totalSeconds / 60 % 60
+        val hours = totalSeconds / 3600
+        return if (hours > 0) {
+            String.format(java.util.Locale.ROOT, "%d:%02d:%02d.%d", hours, minutes, seconds, tenths)
+        } else {
+            String.format(java.util.Locale.ROOT, "%02d:%02d.%d", minutes, seconds, tenths)
+        }
+    }
+
     /** Locale-aware clock time, e.g. "07:30" or "7:30 AM". */
     fun time(context: Context, epochMillis: Long): String =
         DateFormat.getTimeFormat(context).format(Date(epochMillis))
