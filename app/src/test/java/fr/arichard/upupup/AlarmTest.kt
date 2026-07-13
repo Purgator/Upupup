@@ -72,7 +72,8 @@ class AlarmTest {
             volume = 55, rampUp = false, vibrate = false,
             snoozeMinutes = 10, maxSnoozes = 3,
             mission = Mission.MATH, missionLevel = 2, output = Output.BLUETOOTH,
-            routinePackage = "com.spotify.music",
+            routineType = fr.arichard.upupup.core.RoutineType.ASSISTANT,
+            routineValue = "what's the weather",
         )
         assertEquals(alarm, Alarm.fromJson(alarm.toJson()))
     }
@@ -96,5 +97,16 @@ class AlarmTest {
             org.json.JSONObject("""{"id":1,"hour":7,"minute":0,"output":"SPEAKER"}""")
         )
         assertEquals(Output.SPEAKER, speaker.output)
+    }
+
+    @Test
+    fun `legacy routinePackage migrates to an APP routine`() {
+        val alarm = Alarm.fromJson(
+            org.json.JSONObject(
+                """{"id":1,"hour":7,"minute":0,"routinePackage":"com.spotify.music"}"""
+            )
+        )
+        assertEquals(fr.arichard.upupup.core.RoutineType.APP, alarm.routineType)
+        assertEquals("com.spotify.music", alarm.routineValue)
     }
 }
