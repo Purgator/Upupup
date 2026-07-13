@@ -5,6 +5,11 @@
     <!-- Main screen -->
     <string name="tab_alarms">Alarms</string>
     <string name="tab_timer">Timer</string>
+    <string name="tab_stopwatch">Stopwatch</string>
+    <string name="stopwatch_pause">Pause</string>
+    <string name="stopwatch_reset">Reset</string>
+    <string name="stopwatch_lap">Lap</string>
+    <string name="lap_number">Lap %1$d</string>
     <string name="settings_title">Settings</string>
     <string name="no_alarms">No alarms yet.\nTap + to create one.</string>
     <string name="all_alarms_off">All alarms are off</string>
@@ -84,10 +89,19 @@
     <string name="routine">After stopping</string>
     <string name="routine_none">Do nothing</string>
     <string name="routine_open">Open %1$s</string>
+    <string name="routine_type_app">Open an app</string>
+    <string name="routine_type_speak">Speak a phrase</string>
+    <string name="routine_type_assistant">Ask the assistant</string>
+    <string name="routine_speak_hint">e.g. Good morning! Time to get up.</string>
+    <string name="routine_assistant_hint">e.g. what\'s the weather today</string>
+    <string name="routine_speak_desc">Say “%1$s”</string>
+    <string name="routine_assistant_desc">Ask “%1$s”</string>
+    <string name="set_time">Set time</string>
 
     <!-- Ring screen -->
     <string name="stop_alarm">Stop</string>
     <string name="slide_to_stop">Slide to stop</string>
+    <string name="start_mission">Start mission</string>
     <string name="swipe_snooze_hint">↑ Swipe up to snooze (%1$d min)</string>
     <string name="swipe_snooze_hint_timer">↑ Swipe up: +1 min</string>
     <string name="snooze_button">Snooze %1$d min</string>

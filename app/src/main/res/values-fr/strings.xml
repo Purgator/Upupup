@@ -4,6 +4,11 @@
 
     <string name="tab_alarms">Alarmes</string>
     <string name="tab_timer">Minuteur</string>
+    <string name="tab_stopwatch">Chrono</string>
+    <string name="stopwatch_pause">Pause</string>
+    <string name="stopwatch_reset">Réinit.</string>
+    <string name="stopwatch_lap">Tour</string>
+    <string name="lap_number">Tour %1$d</string>
     <string name="settings_title">Réglages</string>
     <string name="no_alarms">Aucune alarme.\nAppuyez sur + pour en créer une.</string>
     <string name="all_alarms_off">Toutes les alarmes sont désactivées</string>
@@ -81,9 +86,18 @@
     <string name="routine">Après l\'arrêt</string>
     <string name="routine_none">Ne rien faire</string>
     <string name="routine_open">Ouvrir %1$s</string>
+    <string name="routine_type_app">Ouvrir une appli</string>
+    <string name="routine_type_speak">Dire une phrase</string>
+    <string name="routine_type_assistant">Demander à l\'assistant</string>
+    <string name="routine_speak_hint">ex. : Bonjour ! C\'est l\'heure de se lever.</string>
+    <string name="routine_assistant_hint">ex. : quel temps fait-il aujourd\'hui</string>
+    <string name="routine_speak_desc">Dire « %1$s »</string>
+    <string name="routine_assistant_desc">Demander « %1$s »</string>
+    <string name="set_time">Choisir l\'heure</string>
 
     <string name="stop_alarm">Arrêter</string>
     <string name="slide_to_stop">Glisser pour arrêter</string>
+    <string name="start_mission">Démarrer la mission</string>
     <string name="swipe_snooze_hint">↑ Balayer vers le haut : rappel (%1$d min)</string>
     <string name="swipe_snooze_hint_timer">↑ Balayer vers le haut : +1 min</string>
     <string name="snooze_button">Rappel %1$d min</string>
