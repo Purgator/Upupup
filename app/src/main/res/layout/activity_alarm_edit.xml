@@ -23,17 +23,25 @@
             android:orientation="vertical"
             android:paddingBottom="16dp">
 
-            <TimePicker
-                android:id="@+id/time_picker"
+            <!-- Big tappable time; opens a smooth Material clock picker -->
+            <TextView
+                android:id="@+id/time_display"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_horizontal"
-                android:timePickerMode="spinner" />
+                android:layout_marginTop="24dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:fontFamily="sans-serif-light"
+                android:paddingHorizontal="16dp"
+                android:textColor="?attr/colorOnSurface"
+                android:textSize="76sp"
+                tools:text="07:30" />
 
             <TextView
                 android:id="@+id/rings_in_preview"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
                 android:gravity="center"
                 android:textColor="?attr/colorPrimary"
                 android:textStyle="bold"
