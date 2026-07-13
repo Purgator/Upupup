@@ -29,7 +29,10 @@ No ads, no account, no paid tier, no tracking. ~4.5 MB.
   max snooze count.
 - **Sound output device** — route the alarm to the phone speaker, wired headphones or
   a Bluetooth device (great for not waking a partner).
-- **Countdown timer** — with a live notification and the same guaranteed ring.
+- **Countdown timer** and **stopwatch** (with laps) alongside the alarms, on a bottom
+  navigation bar.
+- **After-alarm routine** — when you stop an alarm it can open an app, speak a phrase
+  aloud, or hand a question to your voice assistant (weather, agenda…).
 - **Auto-update** — checks GitHub once a day and updates itself (downloads on Wi-Fi
   only, and Android verifies the signature before installing). Can be disabled in
   settings.
