@@ -162,30 +162,57 @@ class MainActivity : AppCompatActivity() {
 
     // ---- Timer tab ----
 
+    /** Seconds the user has composed with the preset buttons, before starting. */
+    private var pendingSeconds = 0
+
     private fun setupTimerTab() {
-        binding.pickerHours.minValue = 0
-        binding.pickerHours.maxValue = 23
-        binding.pickerMinutes.minValue = 0
-        binding.pickerMinutes.maxValue = 59
-        binding.pickerSeconds.minValue = 0
-        binding.pickerSeconds.maxValue = 59
+        // Preset buttons that add to the composed duration.
+        val presets = listOf(
+            60 to getString(R.string.preset_minutes, 1),
+            5 * 60 to getString(R.string.preset_minutes, 5),
+            10 * 60 to getString(R.string.preset_minutes, 10),
+            15 * 60 to getString(R.string.preset_minutes, 15),
+            30 * 60 to getString(R.string.preset_minutes, 30),
+            60 * 60 to getString(R.string.preset_hour, 1),
+        )
+        val density = resources.displayMetrics.density
+        presets.forEachIndexed { index, (seconds, label) ->
+            val button = com.google.android.material.button.MaterialButton(
+                this, null,
+                com.google.android.material.R.attr.materialButtonOutlinedStyle
+            ).apply {
+                text = label
+                cornerRadius = (density * 24).toInt()
+                layoutParams = android.widget.GridLayout.LayoutParams(
+                    android.widget.GridLayout.spec(index / 3, 1f),
+                    android.widget.GridLayout.spec(index % 3, 1f)
+                ).apply {
+                    width = 0
+                    setMargins((density * 4).toInt(), (density * 4).toInt(),
+                        (density * 4).toInt(), (density * 4).toInt())
+                }
+                setOnClickListener {
+                    pendingSeconds = (pendingSeconds + seconds).coerceAtMost(99 * 3600)
+                    updateTimerViews()
+                }
+            }
+            binding.timerPresets.addView(button)
+        }
 
-        val last = timerStore.lastDuration
-        binding.pickerHours.value = last / 3600
-        binding.pickerMinutes.value = last % 3600 / 60
-        binding.pickerSeconds.value = last % 60
-
+        pendingSeconds = timerStore.lastDuration
+        binding.timerClear.setOnClickListener {
+            pendingSeconds = 0
+            updateTimerViews()
+        }
         binding.timerButton.setOnClickListener {
             if (timerStore.isRunning) cancelTimer() else startTimer()
         }
     }
 
     private fun startTimer() {
-        val seconds = binding.pickerHours.value * 3600 +
-            binding.pickerMinutes.value * 60 + binding.pickerSeconds.value
-        if (seconds <= 0) return
-        timerStore.lastDuration = seconds
-        val end = System.currentTimeMillis() + seconds * 1_000L
+        if (pendingSeconds <= 0) return
+        timerStore.lastDuration = pendingSeconds
+        val end = System.currentTimeMillis() + pendingSeconds * 1_000L
         timerStore.endTime = end
         AlarmScheduler.scheduleAll(this)
         postTimerNotification(end)
@@ -202,11 +229,16 @@ class MainActivity : AppCompatActivity() {
 
     private fun updateTimerViews() {
         val running = timerStore.isRunning
-        binding.timerPickers.visibility = if (running) View.GONE else View.VISIBLE
+        binding.timerCompose.visibility = if (running) View.GONE else View.VISIBLE
+        binding.timerPresets.visibility = if (running) View.GONE else View.VISIBLE
+        binding.timerClear.visibility =
+            if (!running && pendingSeconds > 0) View.VISIBLE else View.GONE
         binding.timerCountdown.visibility = if (running) View.VISIBLE else View.GONE
         binding.timerEndAt.visibility = if (running) View.VISIBLE else View.GONE
         binding.timerButton.text =
             getString(if (running) R.string.timer_cancel else R.string.timer_start)
+        binding.timerButton.isEnabled = running || pendingSeconds > 0
+
         if (running) {
             val left = (timerStore.endTime - System.currentTimeMillis()).coerceAtLeast(0) / 1000
             binding.timerCountdown.text = String.format(
@@ -214,6 +246,11 @@ class MainActivity : AppCompatActivity() {
             )
             binding.timerEndAt.text =
                 getString(R.string.timer_notification_text, Format.time(this, timerStore.endTime))
+        } else {
+            val s = pendingSeconds
+            binding.timerCompose.text = String.format(
+                java.util.Locale.ROOT, "%02d:%02d:%02d", s / 3600, s % 3600 / 60, s % 60
+            )
         }
     }
 
@@ -257,6 +294,7 @@ class MainActivity : AppCompatActivity() {
             handler.removeCallbacks(ticker)
             handler.post(ticker)
             updateStopwatch()
+            postStopwatchNotification()
         }
         binding.stopwatchLap.setOnClickListener {
             if (stopwatchStore.running) {
@@ -266,8 +304,41 @@ class MainActivity : AppCompatActivity() {
                 stopwatchStore.reset()
                 lapAdapter.submit(emptyList())
                 updateStopwatch()
+                getSystemService(NotificationManager::class.java).cancel(STOPWATCH_NOTIFICATION_ID)
             }
         }
+    }
+
+    /**
+     * Ongoing notification with a live chronometer while running; a static, dismissible
+     * one when paused. The chronometer ticks by itself in the shade — no need to update
+     * the notification every frame.
+     */
+    private fun postStopwatchNotification() {
+        val running = stopwatchStore.running
+        val manager = getSystemService(NotificationManager::class.java)
+        manager.createNotificationChannel(
+            NotificationChannel(
+                "stopwatch", getString(R.string.stopwatch_notification_title),
+                NotificationManager.IMPORTANCE_LOW
+            )
+        )
+        val open = PendingIntent.getActivity(
+            this, 4, Intent(this, MainActivity::class.java),
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+        val builder = NotificationCompat.Builder(this, "stopwatch")
+            .setSmallIcon(R.drawable.ic_stopwatch)
+            .setContentTitle(getString(R.string.stopwatch_notification_title))
+            .setContentIntent(open)
+            .setOngoing(running)
+        if (running) {
+            builder.setUsesChronometer(true)
+                .setWhen(System.currentTimeMillis() - stopwatchStore.elapsed())
+        } else {
+            builder.setShowWhen(false).setContentText(Format.stopwatch(stopwatchStore.elapsed()))
+        }
+        manager.notify(STOPWATCH_NOTIFICATION_ID, builder.build())
     }
 
     private fun updateStopwatch() {
@@ -373,5 +444,9 @@ class MainActivity : AppCompatActivity() {
             true
         }
         else -> super.onOptionsItemSelected(item)
+    }
+
+    private companion object {
+        const val STOPWATCH_NOTIFICATION_ID = 4
     }
 }
