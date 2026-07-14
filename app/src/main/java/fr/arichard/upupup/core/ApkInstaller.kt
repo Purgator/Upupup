@@ -73,22 +73,30 @@ object ApkInstaller {
         }
 
         val sessionId = installer.createSession(params)
-        installer.openSession(sessionId).use { session ->
-            apk.inputStream().use { input ->
-                session.openWrite("upupup.apk", 0, apk.length()).use { out ->
-                    input.copyTo(out, DEFAULT_BUFFER_SIZE)
-                    session.fsync(out)
+        try {
+            installer.openSession(sessionId).use { session ->
+                apk.inputStream().use { input ->
+                    session.openWrite("upupup.apk", 0, apk.length()).use { out ->
+                        input.copyTo(out, DEFAULT_BUFFER_SIZE)
+                        session.fsync(out)
+                    }
                 }
+                // Explicit component: the manifest receiver has no intent-filter, so an
+                // action-only broadcast would be dropped and the status never delivered.
+                val callback = Intent(context, Receiver::class.java)
+                    .setAction(ACTION_INSTALL_STATUS)
+                val flags = if (Build.VERSION.SDK_INT >= 31) {
+                    PendingIntent.FLAG_MUTABLE
+                } else {
+                    0
+                }
+                val pending = PendingIntent.getBroadcast(context, sessionId, callback, flags)
+                session.commit(pending.intentSender)
             }
-            val callback = Intent(ACTION_INSTALL_STATUS)
-                .setPackage(context.packageName)
-            val flags = if (Build.VERSION.SDK_INT >= 31) {
-                PendingIntent.FLAG_MUTABLE
-            } else {
-                0
-            }
-            val pending = PendingIntent.getBroadcast(context, sessionId, callback, flags)
-            session.commit(pending.intentSender)
+        } catch (e: Exception) {
+            // close() alone keeps the staged session alive; abandon it or they pile up.
+            runCatching { installer.abandonSession(sessionId) }
+            throw e
         }
         Log.i(TAG, "Committed install session $sessionId")
     }

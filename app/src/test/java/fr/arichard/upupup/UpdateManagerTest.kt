@@ -27,4 +27,12 @@ class UpdateManagerTest {
         assertTrue(UpdateManager.isNewer("1.1", "1.beta"))
         assertFalse(UpdateManager.isNewer("abc", "1.0"))
     }
+
+    @Test
+    fun `suffixed segments use their first digit run only`() {
+        // "7-rc1" must parse as 7, not as the digit-concatenation 71.
+        assertFalse(UpdateManager.isNewer("1.7-rc1", "1.8"))
+        assertTrue(UpdateManager.isNewer("1.8", "1.7-beta2"))
+        assertTrue(UpdateManager.isNewer("v1.8", "v1.7"))
+    }
 }

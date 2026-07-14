@@ -29,8 +29,15 @@ class StopwatchStore(context: Context) {
         set(value) = prefs.edit().putLong("accumulated", value).apply()
 
     /** Total elapsed time in milliseconds, running or paused. */
-    fun elapsed(): Long =
-        if (running) accumulated + (SystemClock.elapsedRealtime() - startBase) else accumulated
+    fun elapsed(): Long {
+        if (running && SystemClock.elapsedRealtime() < startBase) {
+            // elapsedRealtime restarted below the stored base: the device rebooted while
+            // running. The span across the reboot is unknowable, so freeze the stopwatch
+            // at the time accumulated before the last start.
+            running = false
+        }
+        return if (running) accumulated + (SystemClock.elapsedRealtime() - startBase) else accumulated
+    }
 
     fun start() {
         if (running) return
@@ -46,6 +53,15 @@ class StopwatchStore(context: Context) {
 
     fun reset() {
         prefs.edit().clear().apply()
+    }
+
+    /**
+     * Called after a reboot: [SystemClock.elapsedRealtime] restarted, so the current run
+     * segment is unresumable. Freeze at the accumulated time (do NOT go through [pause],
+     * which would add a garbage delta computed against the new clock).
+     */
+    fun handleReboot() {
+        if (running) running = false
     }
 
     // ---- Laps ----
