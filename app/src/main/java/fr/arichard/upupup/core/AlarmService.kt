@@ -125,6 +125,7 @@ class AlarmService : Service() {
         runCatching { player?.release() }
         player = null
         vibrator?.cancel()
+        vibrator = null
         audioManager?.let { am ->
             if (previousVolume >= 0) {
                 runCatching { am.setStreamVolume(AudioManager.STREAM_ALARM, previousVolume, 0) }
@@ -158,7 +159,10 @@ class AlarmService : Service() {
             ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE)
 
         try {
-            player = MediaPlayer().apply {
+            // Assigned before configuration so a throwing prepare() can still release it.
+            val mp = MediaPlayer()
+            player = mp
+            mp.apply {
                 setAudioAttributes(
                     AudioAttributes.Builder()
                         .setUsage(AudioAttributes.USAGE_ALARM)
@@ -177,6 +181,8 @@ class AlarmService : Service() {
             if (alarm.rampUp) rampVolume()
         } catch (e: Exception) {
             Log.e(TAG, "Could not play $uri, vibrating only", e)
+            runCatching { player?.release() }
+            player = null
             startVibration() // last resort: at least wake the user somehow
         }
     }

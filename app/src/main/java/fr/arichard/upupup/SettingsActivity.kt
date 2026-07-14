@@ -71,12 +71,13 @@ class SettingsActivity : AppCompatActivity() {
             binding.checkNowButton.isEnabled = false
             binding.installButton.visibility = android.view.View.GONE
             Thread {
-                val result = UpdateManager.check(this, allowDownload = true) {
+                val result = UpdateManager.check(applicationContext, allowDownload = true) {
                     runOnUiThread {
+                        if (isDestroyed) return@runOnUiThread
                         binding.updateStatus.text = getString(R.string.downloading)
                     }
                 }
-                runOnUiThread { showCheckResult(result) }
+                runOnUiThread { if (!isDestroyed) showCheckResult(result) }
             }.start()
         }
 

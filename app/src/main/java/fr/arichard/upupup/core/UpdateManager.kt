@@ -178,8 +178,11 @@ object UpdateManager {
 
     /** Numeric dotted-version comparison: 1.10 > 1.9. Non-numeric parts count as 0. */
     internal fun compareVersions(a: String, b: String): Int {
-        val x = a.split('.').map { it.filter(Char::isDigit).toIntOrNull() ?: 0 }
-        val y = b.split('.').map { it.filter(Char::isDigit).toIntOrNull() ?: 0 }
+        // First digit run only: "7-rc1" is 7, not the digit-concatenation 71.
+        fun segment(s: String) =
+            s.dropWhile { !it.isDigit() }.takeWhile { it.isDigit() }.toIntOrNull() ?: 0
+        val x = a.split('.').map(::segment)
+        val y = b.split('.').map(::segment)
         for (i in 0 until maxOf(x.size, y.size)) {
             val cmp = x.getOrElse(i) { 0 }.compareTo(y.getOrElse(i) { 0 })
             if (cmp != 0) return cmp
@@ -193,6 +196,12 @@ object UpdateManager {
     /** Removes cached update APKs that are no longer newer than the installed app. */
     private fun cleanupOldApks(context: Context, current: String) {
         File(context.cacheDir, "updates").listFiles()?.forEach { file ->
+            // check() is synchronized and downloads only after this cleanup, so any
+            // .tmp lying around is a dead leftover from a killed download.
+            if (file.name.endsWith(".tmp")) {
+                file.delete()
+                return@forEach
+            }
             val version = file.name.removePrefix("Upupup-v").removeSuffix(".apk")
             if (!isNewer(version, current)) file.delete()
         }

@@ -76,7 +76,13 @@ object RoutineRunner {
                     tts?.shutdown()
                 }
             })
-            tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "upupup-routine")
+            val queued = tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "upupup-routine")
+            if (queued != TextToSpeech.SUCCESS) {
+                // Rejected utterances never reach the progress listener, so the
+                // engine would stay bound forever without this.
+                Log.w(TAG, "TTS speak failed ($queued)")
+                tts?.shutdown()
+            }
         }
     }
 }
