@@ -38,10 +38,27 @@ object AlarmScheduler {
         val snoozed = store.snoozeUntil(alarm.id)
         val at = if (snoozed > System.currentTimeMillis()) snoozed else alarm.nextTrigger()
         setExact(context, alarm.id, at)
+        schedulePreAlarm(context, alarm.id, at)
     }
 
     fun cancel(context: Context, id: Long) {
-        alarmManager(context).cancel(firePendingIntent(context, id))
+        val manager = alarmManager(context)
+        manager.cancel(firePendingIntent(context, id))
+        manager.cancel(preAlarmPendingIntent(context, id))
+    }
+
+    /** Heads-up notification a few minutes before the alarm; skipped when too close or off. */
+    private fun schedulePreAlarm(context: Context, id: Long, triggerAt: Long) {
+        val manager = alarmManager(context)
+        manager.cancel(preAlarmPendingIntent(context, id))
+        val lead = Prefs(context).preAlarmMinutes
+        if (lead <= 0) return
+        val at = triggerAt - lead * 60_000L
+        if (at <= System.currentTimeMillis()) return
+        if (Build.VERSION.SDK_INT in 31..32 && !manager.canScheduleExactAlarms()) return
+        manager.setExactAndAllowWhileIdle(
+            AlarmManager.RTC_WAKEUP, at, preAlarmPendingIntent(context, id)
+        )
     }
 
     private fun setExact(context: Context, id: Long, triggerAt: Long) {
@@ -67,6 +84,17 @@ object AlarmScheduler {
             context,
             (id % Int.MAX_VALUE).toInt(),
             Intent(context, AlarmReceiver::class.java).putExtra(AlarmReceiver.EXTRA_ID, id),
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+
+    /** Distinct from the fire intent via its action, so both can coexist per alarm. */
+    private fun preAlarmPendingIntent(context: Context, id: Long): PendingIntent =
+        PendingIntent.getBroadcast(
+            context,
+            (id % Int.MAX_VALUE).toInt(),
+            Intent(context, AlarmReceiver::class.java)
+                .setAction(AlarmReceiver.ACTION_PRE_ALARM)
+                .putExtra(AlarmReceiver.EXTRA_ID, id),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
 
