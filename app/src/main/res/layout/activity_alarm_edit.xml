@@ -23,7 +23,7 @@
             android:orientation="vertical"
             android:paddingBottom="16dp">
 
-            <!-- Big tappable time; opens a smooth Material clock picker -->
+            <!-- Clock mode: big tappable time; opens a Material clock picker -->
             <TextView
                 android:id="@+id/time_display"
                 android:layout_width="wrap_content"
@@ -35,7 +35,37 @@
                 android:paddingHorizontal="16dp"
                 android:textColor="?attr/colorOnSurface"
                 android:textSize="76sp"
+                android:visibility="gone"
                 tools:text="07:30" />
+
+            <!-- Wheel mode: two wheels; tap the centre value to type it directly -->
+            <LinearLayout
+                android:id="@+id/time_wheels"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="16dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <NumberPicker
+                    android:id="@+id/wheel_hours"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginHorizontal="8dp"
+                    android:text=":"
+                    android:textColor="?attr/colorOnSurface"
+                    android:textSize="40sp" />
+
+                <NumberPicker
+                    android:id="@+id/wheel_minutes"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+            </LinearLayout>
 
             <TextView
                 android:id="@+id/rings_in_preview"
