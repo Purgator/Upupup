@@ -49,6 +49,9 @@ class SettingsActivity : AppCompatActivity() {
                 .show()
         }
 
+        setupTimePickerRow(prefs)
+        setupPreAlarmRow(prefs)
+
         binding.swipeSnoozeSwitch.isChecked = prefs.swipeToSnooze
         binding.swipeSnoozeSwitch.setOnCheckedChangeListener { _, checked ->
             prefs.swipeToSnooze = checked
@@ -79,6 +82,54 @@ class SettingsActivity : AppCompatActivity() {
 
         binding.installButton.setOnClickListener {
             readyVersion?.let { UpdateManager.install(this, it) }
+        }
+    }
+
+    private fun setupTimePickerRow(prefs: Prefs) {
+        val modes = arrayOf(
+            fr.arichard.upupup.core.TimePickerMode.WHEEL,
+            fr.arichard.upupup.core.TimePickerMode.CLOCK,
+        )
+        fun label(mode: fr.arichard.upupup.core.TimePickerMode) = getString(
+            if (mode == fr.arichard.upupup.core.TimePickerMode.WHEEL) R.string.time_picker_wheel
+            else R.string.time_picker_clock
+        )
+        binding.timePickerValue.text = label(prefs.timePickerMode)
+        binding.rowTimePicker.setOnClickListener {
+            com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.time_picker_style)
+                .setSingleChoiceItems(
+                    modes.map { label(it) }.toTypedArray(),
+                    modes.indexOf(prefs.timePickerMode)
+                ) { dialog, which ->
+                    prefs.timePickerMode = modes[which]
+                    binding.timePickerValue.text = label(modes[which])
+                    dialog.dismiss()
+                }
+                .show()
+        }
+    }
+
+    private fun setupPreAlarmRow(prefs: Prefs) {
+        val choices = intArrayOf(0, 5, 10, 15, 30, 60)
+        fun label(minutes: Int) =
+            if (minutes == 0) getString(R.string.pre_alarm_off)
+            else getString(R.string.pre_alarm_before, minutes)
+        binding.preAlarmValue.text = label(prefs.preAlarmMinutes)
+        binding.rowPreAlarm.setOnClickListener {
+            com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.pre_alarm_setting)
+                .setSingleChoiceItems(
+                    choices.map { label(it) }.toTypedArray(),
+                    choices.indexOf(prefs.preAlarmMinutes).coerceAtLeast(0)
+                ) { dialog, which ->
+                    prefs.preAlarmMinutes = choices[which]
+                    binding.preAlarmValue.text = label(choices[which])
+                    // Re-arm every alarm so the new lead time takes effect.
+                    fr.arichard.upupup.core.AlarmScheduler.scheduleAll(this)
+                    dialog.dismiss()
+                }
+                .show()
         }
     }
 

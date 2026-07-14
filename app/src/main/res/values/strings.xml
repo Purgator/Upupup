@@ -123,9 +123,9 @@
     <!-- Timer -->
     <string name="timer_start">Start</string>
     <string name="timer_cancel">Cancel</string>
-    <string name="timer_hours">hours</string>
-    <string name="timer_minutes">min</string>
-    <string name="timer_seconds">sec</string>
+    <string name="timer_clear">Clear</string>
+    <string name="preset_minutes">+%1$d min</string>
+    <string name="preset_hour">+%1$d h</string>
     <string name="timer_running_channel">Timer</string>
     <string name="timer_notification_title">Timer running</string>
     <string name="timer_notification_text">Rings at %1$s</string>
@@ -134,6 +134,8 @@
     <string name="alarm_channel">Ringing alarm</string>
     <string name="upcoming_channel">Upcoming alarm</string>
     <string name="alarm_notification_text">Alarm ringing — tap to open</string>
+    <string name="upcoming_text">Rings in %1$d min · %2$s</string>
+    <string name="stopwatch_notification_title">Stopwatch running</string>
 
     <!-- Permissions -->
     <string name="exact_alarm_needed">Upupup needs the “Alarms &amp; reminders” permission so alarms ring exactly on time.</string>
@@ -142,6 +144,12 @@
     <string name="overlay_needed">Allow “Display over other apps” so the alarm screen pops up instantly when it rings — even when the phone is locked.</string>
 
     <!-- Settings -->
+    <string name="time_picker_style">Time picker style</string>
+    <string name="time_picker_wheel">Wheels</string>
+    <string name="time_picker_clock">Clock</string>
+    <string name="pre_alarm_setting">Notify before alarm</string>
+    <string name="pre_alarm_off">Off</string>
+    <string name="pre_alarm_before">%1$d min before</string>
     <string name="swipe_snooze_setting">Swipe up to snooze</string>
     <string name="swipe_snooze_setting_summary">On the ring screen, snooze with an upward swipe instead of a button</string>
     <string name="auto_update">Automatic updates</string>

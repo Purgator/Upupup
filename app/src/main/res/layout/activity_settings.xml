@@ -26,6 +26,36 @@
             tools:text="Automatic" />
     </LinearLayout>
 
+    <LinearLayout
+        android:id="@+id/row_time_picker"
+        style="@style/OptionRow">
+
+        <TextView
+            style="@style/OptionTitle"
+            android:drawableStart="@drawable/ic_alarm"
+            android:text="@string/time_picker_style" />
+
+        <TextView
+            android:id="@+id/time_picker_value"
+            style="@style/OptionValue"
+            tools:text="Wheel" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/row_pre_alarm"
+        style="@style/OptionRow">
+
+        <TextView
+            style="@style/OptionTitle"
+            android:drawableStart="@drawable/ic_alarm"
+            android:text="@string/pre_alarm_setting" />
+
+        <TextView
+            android:id="@+id/pre_alarm_value"
+            style="@style/OptionValue"
+            tools:text="10 min before" />
+    </LinearLayout>
+
     <com.google.android.material.materialswitch.MaterialSwitch
         android:id="@+id/swipe_snooze_switch"
         android:layout_width="match_parent"

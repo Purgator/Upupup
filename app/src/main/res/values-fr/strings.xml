@@ -118,9 +118,9 @@
 
     <string name="timer_start">Démarrer</string>
     <string name="timer_cancel">Annuler</string>
-    <string name="timer_hours">heures</string>
-    <string name="timer_minutes">min</string>
-    <string name="timer_seconds">sec</string>
+    <string name="timer_clear">Effacer</string>
+    <string name="preset_minutes">+%1$d min</string>
+    <string name="preset_hour">+%1$d h</string>
     <string name="timer_running_channel">Minuteur</string>
     <string name="timer_notification_title">Minuteur en cours</string>
     <string name="timer_notification_text">Sonne à %1$s</string>
@@ -128,12 +128,20 @@
     <string name="alarm_channel">Alarme en cours</string>
     <string name="upcoming_channel">Prochaine alarme</string>
     <string name="alarm_notification_text">Alarme — appuyez pour ouvrir</string>
+    <string name="upcoming_text">Sonne dans %1$d min · %2$s</string>
+    <string name="stopwatch_notification_title">Chronomètre en cours</string>
 
     <string name="exact_alarm_needed">Upupup a besoin de l\'autorisation « Alarmes et rappels » pour sonner à l\'heure exacte.</string>
     <string name="grant">Autoriser</string>
     <string name="fullscreen_needed">Autorisez l\'affichage plein écran pour que l\'alarme puisse réveiller l\'écran.</string>
     <string name="overlay_needed">Autorisez « Superposition aux autres applis » pour que l\'écran d\'alarme apparaisse instantanément quand elle sonne — même téléphone verrouillé.</string>
 
+    <string name="time_picker_style">Style du sélecteur d\'heure</string>
+    <string name="time_picker_wheel">Molettes</string>
+    <string name="time_picker_clock">Horloge</string>
+    <string name="pre_alarm_setting">Notifier avant l\'alarme</string>
+    <string name="pre_alarm_off">Désactivé</string>
+    <string name="pre_alarm_before">%1$d min avant</string>
     <string name="swipe_snooze_setting">Rappel par balayage vers le haut</string>
     <string name="swipe_snooze_setting_summary">Sur l\'écran d\'alarme, balayez vers le haut au lieu d\'appuyer sur un bouton</string>
     <string name="auto_update">Mises à jour automatiques</string>
