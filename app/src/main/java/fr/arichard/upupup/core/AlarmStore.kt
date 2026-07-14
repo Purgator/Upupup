@@ -51,7 +51,12 @@ class AlarmStore(context: Context) {
 
     /** Called when the alarm actually fires: the pending snooze time is consumed. */
     fun consumeSnoozeTime(id: Long) {
-        prefs.edit().remove("snooze_until_$id").apply()
+        val editor = prefs.edit().remove("snooze_until_$id")
+        // No pending snooze means a fresh ring cycle: a count left over from a cycle
+        // that ended without a dismiss (e.g. interrupted by another alarm) must not
+        // eat into this cycle's snooze budget.
+        if (snoozeUntil(id) == 0L) editor.remove("snooze_count_$id")
+        editor.apply()
     }
 
     /** Called on dismiss: everything about the ring cycle is over. */

@@ -93,8 +93,9 @@ class MainActivity : AppCompatActivity() {
         setupStopwatchTab()
         requestNeededPermissions()
 
-        // Daily auto-update check, off the main thread.
-        Thread { UpdateManager.maybeDailyCheck(this) }.start()
+        // Daily auto-update check, off the main thread. The application context keeps
+        // the worker from pinning this activity for the whole network round-trip.
+        Thread { UpdateManager.maybeDailyCheck(applicationContext) }.start()
     }
 
     override fun onResume() {
@@ -199,7 +200,7 @@ class MainActivity : AppCompatActivity() {
             binding.timerPresets.addView(button)
         }
 
-        pendingSeconds = timerStore.lastDuration
+        pendingSeconds = timerStore.lastDuration.coerceIn(0, 99 * 3600)
         binding.timerClear.setOnClickListener {
             pendingSeconds = 0
             updateTimerViews()

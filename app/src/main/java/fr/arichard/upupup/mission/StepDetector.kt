@@ -19,13 +19,17 @@ class StepDetector(private val onStep: () -> Unit) : SensorEventListener {
     private var lastSpikeAt = 0L
     private var lastStepAt = 0L
 
-    /** Returns false when the device has no step sensor so the caller can fall back. */
+    /** Returns false when the step sensor is unavailable so the caller can fall back. */
     fun start(sensorManager: SensorManager): Boolean {
         val stepSensor = sensorManager.getDefaultSensor(Sensor.TYPE_STEP_DETECTOR) ?: return false
         sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)?.let {
             sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_GAME)
         }
-        return sensorManager.registerListener(this, stepSensor, SensorManager.SENSOR_DELAY_UI)
+        val ok = sensorManager.registerListener(this, stepSensor, SensorManager.SENSOR_DELAY_UI)
+        // Callers drop this detector on false; the accelerometer watch registered above
+        // must not stay behind holding it (and its onStep closure) forever.
+        if (!ok) sensorManager.unregisterListener(this)
+        return ok
     }
 
     fun stop(sensorManager: SensorManager) {

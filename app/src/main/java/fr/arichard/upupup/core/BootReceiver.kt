@@ -13,7 +13,12 @@ class BootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         when (intent.action) {
             Intent.ACTION_BOOT_COMPLETED,
-            Intent.ACTION_LOCKED_BOOT_COMPLETED,
+            Intent.ACTION_LOCKED_BOOT_COMPLETED -> {
+                // A running stopwatch cannot span a reboot: its elapsedRealtime base
+                // died with the old boot. Freeze it before anything reads it.
+                StopwatchStore(context).handleReboot()
+                AlarmScheduler.scheduleAll(context)
+            }
             Intent.ACTION_MY_PACKAGE_REPLACED,
             Intent.ACTION_TIME_CHANGED,
             Intent.ACTION_TIMEZONE_CHANGED -> AlarmScheduler.scheduleAll(context)

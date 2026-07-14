@@ -38,6 +38,7 @@ class RingActivity : AppCompatActivity() {
 
     private var ringingAlarm: fr.arichard.upupup.core.Alarm? = null
     private var snoozeGestureDetector: android.view.GestureDetector? = null
+    private var swipeHelperAnimator: android.animation.ObjectAnimator? = null
     private var isPreview = false
 
     private var shakeDetector: ShakeDetector? = null
@@ -142,7 +143,7 @@ class RingActivity : AppCompatActivity() {
             id = -1, hour = 0, minute = 0, mission = mission, missionLevel = level
         )
         startMission(mission, level)
-        startSensors()
+        // No startSensors() here: onResume() follows immediately and registers them.
     }
 
     /** A real alarm fired while the preview was open: become the real ring screen. */
@@ -243,7 +244,7 @@ class RingActivity : AppCompatActivity() {
     /** Looping upward bob of the swipe-up hint so the gesture is obvious. */
     private fun animateSwipeHelper() {
         val distance = resources.displayMetrics.density * 22
-        android.animation.ObjectAnimator.ofFloat(
+        swipeHelperAnimator = android.animation.ObjectAnimator.ofFloat(
             binding.swipeHelper, View.TRANSLATION_Y, 0f, -distance, 0f
         ).apply {
             duration = 1_400
@@ -535,6 +536,8 @@ class RingActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         handler.removeCallbacksAndMessages(null)
+        swipeHelperAnimator?.cancel()
+        swipeHelperAnimator = null
         if (instance?.get() === this) instance = null
         super.onDestroy()
     }
