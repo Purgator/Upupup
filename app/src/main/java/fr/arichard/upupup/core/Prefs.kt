@@ -2,6 +2,9 @@ package fr.arichard.upupup.core
 
 import android.content.Context
 
+/** How the alarm time is picked in the editor. */
+enum class TimePickerMode { WHEEL, CLOCK }
+
 /** App-level settings. */
 class Prefs(context: Context) {
 
@@ -11,6 +14,18 @@ class Prefs(context: Context) {
     var autoUpdate: Boolean
         get() = prefs.getBoolean("auto_update", true)
         set(value) = prefs.edit().putBoolean("auto_update", value).apply()
+
+    /** Minutes before an alarm rings to post a heads-up notification; 0 = off. */
+    var preAlarmMinutes: Int
+        get() = prefs.getInt("pre_alarm_minutes", 10)
+        set(value) = prefs.edit().putInt("pre_alarm_minutes", value).apply()
+
+    /** Editor time-selection style. */
+    var timePickerMode: TimePickerMode
+        get() = runCatching {
+            TimePickerMode.valueOf(prefs.getString("time_picker_mode", null) ?: "")
+        }.getOrDefault(TimePickerMode.WHEEL)
+        set(value) = prefs.edit().putString("time_picker_mode", value.name).apply()
 
     /** Snooze gesture on the ring screen: swipe up (default) or a tap button. */
     var swipeToSnooze: Boolean

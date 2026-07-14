@@ -75,66 +75,31 @@
             android:padding="24dp"
             android:visibility="gone">
 
-            <LinearLayout
-                android:id="@+id/timer_pickers"
+            <!-- Not running: composed duration + preset buttons -->
+            <TextView
+                android:id="@+id/timer_compose"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="24dp"
-                android:orientation="horizontal">
+                android:layout_marginTop="32dp"
+                android:fontFamily="sans-serif-thin"
+                android:textSize="64sp"
+                tools:text="25:00" />
 
-                <LinearLayout
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:gravity="center_horizontal"
-                    android:orientation="vertical">
+            <GridLayout
+                android:id="@+id/timer_presets"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:columnCount="3" />
 
-                    <NumberPicker
-                        android:id="@+id/picker_hours"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/timer_hours" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="16dp"
-                    android:gravity="center_horizontal"
-                    android:orientation="vertical">
-
-                    <NumberPicker
-                        android:id="@+id/picker_minutes"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/timer_minutes" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="16dp"
-                    android:gravity="center_horizontal"
-                    android:orientation="vertical">
-
-                    <NumberPicker
-                        android:id="@+id/picker_seconds"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/timer_seconds" />
-                </LinearLayout>
-            </LinearLayout>
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/timer_clear"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="@string/timer_clear"
+                android:visibility="gone" />
 
             <TextView
                 android:id="@+id/timer_countdown"
