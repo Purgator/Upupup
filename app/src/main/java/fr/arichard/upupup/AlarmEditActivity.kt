@@ -6,6 +6,7 @@ import android.media.RingtoneManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.view.View
 import android.widget.SeekBar
 import android.widget.Toast
 import androidx.activity.addCallback
@@ -85,8 +86,7 @@ class AlarmEditActivity : AppCompatActivity() {
             }
         }
 
-        updateTimeDisplay()
-        binding.timeDisplay.setOnClickListener { pickTime() }
+        setupTimeSelector()
 
         buildDayToggles()
         binding.labelInput.setText(draft.label)
@@ -120,9 +120,18 @@ class AlarmEditActivity : AppCompatActivity() {
         updateValues()
     }
 
-    /** [draft] plus whatever is currently typed in the label field. */
-    private fun currentDraft(): Alarm =
-        draft.copy(label = binding.labelInput.text?.toString()?.trim().orEmpty())
+    /** [draft] plus whatever is currently typed in the label field / wheels. */
+    private fun currentDraft(): Alarm {
+        // Commit a value typed into a wheel but not yet confirmed (focus still inside).
+        if (binding.timeWheels.visibility == View.VISIBLE) {
+            binding.wheelHours.clearFocus()
+            binding.wheelMinutes.clearFocus()
+            draft = draft.copy(
+                hour = binding.wheelHours.value, minute = binding.wheelMinutes.value
+            )
+        }
+        return draft.copy(label = binding.labelInput.text?.toString()?.trim().orEmpty())
+    }
 
     private fun save() {
         draft = currentDraft().copy(enabled = true)
@@ -136,7 +145,46 @@ class AlarmEditActivity : AppCompatActivity() {
         finish()
     }
 
-    // ---- Time picker ----
+    // ---- Time selector (wheel or clock, per the app setting) ----
+
+    private fun setupTimeSelector() {
+        val wheelMode = fr.arichard.upupup.core.Prefs(this).timePickerMode ==
+            fr.arichard.upupup.core.TimePickerMode.WHEEL
+        binding.timeWheels.visibility = if (wheelMode) View.VISIBLE else View.GONE
+        binding.timeDisplay.visibility = if (wheelMode) View.GONE else View.VISIBLE
+        if (wheelMode) setupWheels() else {
+            updateTimeDisplay()
+            binding.timeDisplay.setOnClickListener { pickTime() }
+        }
+    }
+
+    private fun setupWheels() {
+        val twoDigits = android.widget.NumberPicker.Formatter { String.format(java.util.Locale.ROOT, "%02d", it) }
+        binding.wheelHours.apply {
+            minValue = 0
+            maxValue = 23
+            wrapSelectorWheel = true
+            setFormatter(twoDigits)
+            value = draft.hour
+            setOnValueChangedListener { _, _, new ->
+                draft = draft.copy(hour = new)
+                updateRingsInPreview()
+            }
+        }
+        binding.wheelMinutes.apply {
+            minValue = 0
+            maxValue = 59
+            wrapSelectorWheel = true
+            setFormatter(twoDigits)
+            value = draft.minute
+            setOnValueChangedListener { _, _, new ->
+                draft = draft.copy(minute = new)
+                updateRingsInPreview()
+            }
+        }
+    }
+
+    // ---- Clock picker ----
 
     private fun pickTime() {
         val is24h = android.text.format.DateFormat.is24HourFormat(this)
