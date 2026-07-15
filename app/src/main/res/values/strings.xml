@@ -128,6 +128,9 @@
     <string name="preset_hour">+%1$d h</string>
     <string name="timer_running_channel">Timer</string>
     <string name="timer_notification_title">Timer running</string>
+    <string name="timer_paused_title">Timer paused</string>
+    <string name="stopwatch_paused_title">Stopwatch paused</string>
+    <string name="action_resume">Resume</string>
     <string name="timer_notification_text">Rings at %1$s</string>
 
     <!-- Notifications -->
