@@ -33,6 +33,7 @@
     </queries>
 
     <application
+        android:name=".UpupupApp"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
@@ -87,6 +88,11 @@
         <!-- AlarmManager fires here at the exact trigger time. -->
         <receiver
             android:name=".core.AlarmReceiver"
+            android:exported="false" />
+
+        <!-- Timer/stopwatch notification actions (pause, resume, lap, reset, +1 min). -->
+        <receiver
+            android:name=".core.TickingNotifications$ActionReceiver"
             android:exported="false" />
 
         <!-- Reschedules every enabled alarm after a reboot or an app update. -->

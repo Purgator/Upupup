@@ -53,7 +53,7 @@ class AlarmService : Service() {
             return START_NOT_STICKY
         }
         val isTimer = id == AlarmScheduler.TIMER_ID
-        val alarm = if (isTimer) timerAlarm() else AlarmStore(this).get(id)
+        val alarm = if (isTimer) timerAlarm(this) else AlarmStore(this).get(id)
         if (alarm == null) {
             stopSelf()
             return START_NOT_STICKY
@@ -294,7 +294,7 @@ class AlarmService : Service() {
             private set
 
         /** Default settings used when the countdown timer rings. */
-        private fun timerAlarm() = Alarm(
+        private fun timerAlarm(context: Context) = Alarm(
             id = AlarmScheduler.TIMER_ID,
             hour = 0, minute = 0,
             volume = 80,
@@ -302,6 +302,7 @@ class AlarmService : Service() {
             vibrate = true,
             snoozeMinutes = 1, // the "+1 min" button
             mission = Mission.NONE,
+            output = TimerStore(context).output,
         )
 
         /** Whether the currently ringing alarm still has snoozes available. */

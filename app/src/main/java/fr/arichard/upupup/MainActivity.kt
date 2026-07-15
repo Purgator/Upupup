@@ -2,9 +2,7 @@ package fr.arichard.upupup
 
 import android.Manifest
 import android.app.AlarmManager
-import android.app.NotificationChannel
 import android.app.NotificationManager
-import android.app.PendingIntent
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
@@ -17,14 +15,16 @@ import android.view.MenuItem
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
-import androidx.core.app.NotificationCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import fr.arichard.upupup.core.AlarmScheduler
 import fr.arichard.upupup.core.AlarmStore
 import fr.arichard.upupup.core.Format
+import fr.arichard.upupup.core.Output
 import fr.arichard.upupup.core.Prefs
 import fr.arichard.upupup.core.StopwatchStore
+import fr.arichard.upupup.core.TickingNotifications
+import fr.arichard.upupup.core.TimerController
 import fr.arichard.upupup.core.TimerStore
 import fr.arichard.upupup.core.UpdateManager
 import fr.arichard.upupup.databinding.ActivityMainBinding
@@ -202,85 +202,93 @@ class MainActivity : AppCompatActivity() {
 
         pendingSeconds = timerStore.lastDuration.coerceIn(0, 99 * 3600)
         binding.timerClear.setOnClickListener {
-            pendingSeconds = 0
+            if (timerStore.isPaused) {
+                TimerController.reset(this)
+            } else {
+                pendingSeconds = 0
+            }
             updateTimerViews()
         }
         binding.timerButton.setOnClickListener {
-            if (timerStore.isRunning) cancelTimer() else startTimer()
+            when {
+                timerStore.isRunning -> cancelTimer()
+                timerStore.isPaused -> {
+                    TimerController.resume(this)
+                    updateTimerViews()
+                }
+                else -> startTimer()
+            }
+        }
+
+        // Sound-output selector: tapping an icon is the whole interaction.
+        val outputs = mapOf(
+            R.id.timer_output_auto to Output.AUTO,
+            R.id.timer_output_speaker to Output.SPEAKER,
+            R.id.timer_output_wired to Output.WIRED,
+            R.id.timer_output_bluetooth to Output.BLUETOOTH,
+        )
+        binding.timerOutput.check(
+            outputs.entries.first { it.value == timerStore.output }.key
+        )
+        binding.timerOutput.addOnButtonCheckedListener { _, checkedId, isChecked ->
+            if (isChecked) outputs[checkedId]?.let { timerStore.output = it }
         }
     }
 
     private fun startTimer() {
         if (pendingSeconds <= 0) return
         timerStore.lastDuration = pendingSeconds
-        val end = System.currentTimeMillis() + pendingSeconds * 1_000L
-        timerStore.endTime = end
+        timerStore.endTime = System.currentTimeMillis() + pendingSeconds * 1_000L
         AlarmScheduler.scheduleAll(this)
-        postTimerNotification(end)
         updateTimerViews()
     }
 
     private fun cancelTimer() {
-        timerStore.clear()
-        AlarmScheduler.cancel(this, AlarmScheduler.TIMER_ID)
-        getSystemService(NotificationManager::class.java)
-            .cancel(fr.arichard.upupup.core.AlarmService.NOTIFICATION_ID_TIMER)
+        TimerController.reset(this)
+        TickingNotifications.cancelTimer(this)
         updateTimerViews()
     }
 
     private fun updateTimerViews() {
         val running = timerStore.isRunning
-        binding.timerCompose.visibility = if (running) View.GONE else View.VISIBLE
-        binding.timerPresets.visibility = if (running) View.GONE else View.VISIBLE
+        val paused = timerStore.isPaused
+        val idle = !running && !paused
+        binding.timerCompose.visibility = if (idle) View.VISIBLE else View.GONE
+        binding.timerPresets.visibility = if (idle) View.VISIBLE else View.GONE
+        binding.timerOutput.visibility = if (idle) View.VISIBLE else View.GONE
         binding.timerClear.visibility =
-            if (!running && pendingSeconds > 0) View.VISIBLE else View.GONE
-        binding.timerCountdown.visibility = if (running) View.VISIBLE else View.GONE
+            if (paused || (idle && pendingSeconds > 0)) View.VISIBLE else View.GONE
+        binding.timerClear.text =
+            getString(if (paused) R.string.stopwatch_reset else R.string.timer_clear)
+        binding.timerCountdown.visibility = if (idle) View.GONE else View.VISIBLE
         binding.timerEndAt.visibility = if (running) View.VISIBLE else View.GONE
-        binding.timerButton.text =
-            getString(if (running) R.string.timer_cancel else R.string.timer_start)
-        binding.timerButton.isEnabled = running || pendingSeconds > 0
+        binding.timerButton.text = getString(
+            when {
+                running -> R.string.timer_cancel
+                paused -> R.string.action_resume
+                else -> R.string.timer_start
+            }
+        )
+        binding.timerButton.isEnabled = !idle || pendingSeconds > 0
 
-        if (running) {
-            val left = (timerStore.endTime - System.currentTimeMillis()).coerceAtLeast(0) / 1000
-            binding.timerCountdown.text = String.format(
-                java.util.Locale.ROOT, "%02d:%02d:%02d", left / 3600, left % 3600 / 60, left % 60
-            )
-            binding.timerEndAt.text =
-                getString(R.string.timer_notification_text, Format.time(this, timerStore.endTime))
-        } else {
+        if (idle) {
             val s = pendingSeconds
             binding.timerCompose.text = String.format(
                 java.util.Locale.ROOT, "%02d:%02d:%02d", s / 3600, s % 3600 / 60, s % 60
             )
-        }
-    }
-
-    /** Ongoing countdown notification; the system renders the ticking chronometer. */
-    private fun postTimerNotification(end: Long) {
-        val manager = getSystemService(NotificationManager::class.java)
-        manager.createNotificationChannel(
-            NotificationChannel(
-                "timer", getString(R.string.timer_running_channel),
-                NotificationManager.IMPORTANCE_LOW
+        } else {
+            val leftMs = if (running) timerStore.endTime - System.currentTimeMillis()
+            else timerStore.pausedRemaining
+            val left = leftMs.coerceAtLeast(0) / 1000
+            binding.timerCountdown.text = String.format(
+                java.util.Locale.ROOT, "%02d:%02d:%02d", left / 3600, left % 3600 / 60, left % 60
             )
-        )
-        val open = PendingIntent.getActivity(
-            this, 2, Intent(this, MainActivity::class.java),
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-        )
-        manager.notify(
-            fr.arichard.upupup.core.AlarmService.NOTIFICATION_ID_TIMER,
-            NotificationCompat.Builder(this, "timer")
-                .setSmallIcon(R.drawable.ic_alarm)
-                .setContentTitle(getString(R.string.timer_notification_title))
-                .setContentText(getString(R.string.timer_notification_text, Format.time(this, end)))
-                .setUsesChronometer(true)
-                .setChronometerCountDown(true)
-                .setWhen(end)
-                .setOngoing(true)
-                .setContentIntent(open)
-                .build()
-        )
+            if (running) {
+                binding.timerEndAt.text = getString(
+                    R.string.timer_notification_text, Format.time(this, timerStore.endTime)
+                )
+            }
+        }
     }
 
     // ---- Stopwatch tab ----
@@ -295,7 +303,6 @@ class MainActivity : AppCompatActivity() {
             handler.removeCallbacks(ticker)
             handler.post(ticker)
             updateStopwatch()
-            postStopwatchNotification()
         }
         binding.stopwatchLap.setOnClickListener {
             if (stopwatchStore.running) {
@@ -305,41 +312,8 @@ class MainActivity : AppCompatActivity() {
                 stopwatchStore.reset()
                 lapAdapter.submit(emptyList())
                 updateStopwatch()
-                getSystemService(NotificationManager::class.java).cancel(STOPWATCH_NOTIFICATION_ID)
             }
         }
-    }
-
-    /**
-     * Ongoing notification with a live chronometer while running; a static, dismissible
-     * one when paused. The chronometer ticks by itself in the shade — no need to update
-     * the notification every frame.
-     */
-    private fun postStopwatchNotification() {
-        val running = stopwatchStore.running
-        val manager = getSystemService(NotificationManager::class.java)
-        manager.createNotificationChannel(
-            NotificationChannel(
-                "stopwatch", getString(R.string.stopwatch_notification_title),
-                NotificationManager.IMPORTANCE_LOW
-            )
-        )
-        val open = PendingIntent.getActivity(
-            this, 4, Intent(this, MainActivity::class.java),
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-        )
-        val builder = NotificationCompat.Builder(this, "stopwatch")
-            .setSmallIcon(R.drawable.ic_stopwatch)
-            .setContentTitle(getString(R.string.stopwatch_notification_title))
-            .setContentIntent(open)
-            .setOngoing(running)
-        if (running) {
-            builder.setUsesChronometer(true)
-                .setWhen(System.currentTimeMillis() - stopwatchStore.elapsed())
-        } else {
-            builder.setShowWhen(false).setContentText(Format.stopwatch(stopwatchStore.elapsed()))
-        }
-        manager.notify(STOPWATCH_NOTIFICATION_ID, builder.build())
     }
 
     private fun updateStopwatch() {
@@ -445,9 +419,5 @@ class MainActivity : AppCompatActivity() {
             true
         }
         else -> super.onOptionsItemSelected(item)
-    }
-
-    private companion object {
-        const val STOPWATCH_NOTIFICATION_ID = 4
     }
 }
