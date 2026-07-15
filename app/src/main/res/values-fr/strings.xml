@@ -123,6 +123,9 @@
     <string name="preset_hour">+%1$d h</string>
     <string name="timer_running_channel">Minuteur</string>
     <string name="timer_notification_title">Minuteur en cours</string>
+    <string name="timer_paused_title">Minuteur en pause</string>
+    <string name="stopwatch_paused_title">Chronomètre en pause</string>
+    <string name="action_resume">Reprendre</string>
     <string name="timer_notification_text">Sonne à %1$s</string>
 
     <string name="alarm_channel">Alarme en cours</string>
