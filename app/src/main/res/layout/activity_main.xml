@@ -219,8 +219,8 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="40dp"
                 android:fontFamily="monospace"
-                android:text="00:00.0"
-                android:textSize="60sp" />
+                android:text="00:00.00"
+                android:textSize="64sp" />
 
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/lap_list"
@@ -235,26 +235,44 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="8dp"
-                android:orientation="horizontal">
+                android:orientation="vertical">
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/stopwatch_lap"
-                    style="@style/Widget.Material3.Button.TonalButton"
-                    android:layout_width="0dp"
-                    android:layout_height="64dp"
-                    android:layout_marginEnd="8dp"
-                    android:layout_weight="1"
-                    android:text="@string/stopwatch_reset"
-                    app:cornerRadius="32dp" />
-
+                <!-- The main action dominates; Reset and Lap follow underneath. -->
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/stopwatch_toggle"
-                    android:layout_width="0dp"
-                    android:layout_height="64dp"
-                    android:layout_weight="1"
+                    android:layout_width="match_parent"
+                    android:layout_height="96dp"
                     android:text="@string/timer_start"
-                    android:textSize="18sp"
-                    app:cornerRadius="32dp" />
+                    android:textSize="26sp"
+                    app:cornerRadius="48dp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/stopwatch_reset"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="0dp"
+                        android:layout_height="72dp"
+                        android:layout_marginEnd="10dp"
+                        android:layout_weight="1"
+                        android:text="@string/stopwatch_reset"
+                        android:textSize="18sp"
+                        app:cornerRadius="36dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/stopwatch_lap"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="0dp"
+                        android:layout_height="72dp"
+                        android:layout_weight="1"
+                        android:text="@string/stopwatch_lap"
+                        android:textSize="18sp"
+                        app:cornerRadius="36dp" />
+                </LinearLayout>
             </LinearLayout>
         </LinearLayout>
 
