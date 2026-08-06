@@ -23,17 +23,19 @@ object Format {
         }
     }
 
-    /** Stopwatch elapsed time: "mm:ss.d", or "h:mm:ss.d" past an hour. */
+    /** Stopwatch elapsed time: "mm:ss.cc", or "h:mm:ss.cc" past an hour. */
     fun stopwatch(millis: Long): String {
-        val tenths = millis / 100 % 10
+        val centis = millis / 10 % 100
         val totalSeconds = millis / 1000
         val seconds = totalSeconds % 60
         val minutes = totalSeconds / 60 % 60
         val hours = totalSeconds / 3600
         return if (hours > 0) {
-            String.format(java.util.Locale.ROOT, "%d:%02d:%02d.%d", hours, minutes, seconds, tenths)
+            String.format(
+                java.util.Locale.ROOT, "%d:%02d:%02d.%02d", hours, minutes, seconds, centis
+            )
         } else {
-            String.format(java.util.Locale.ROOT, "%02d:%02d.%d", minutes, seconds, tenths)
+            String.format(java.util.Locale.ROOT, "%02d:%02d.%02d", minutes, seconds, centis)
         }
     }
 

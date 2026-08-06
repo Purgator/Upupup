@@ -46,7 +46,7 @@ class MainActivity : AppCompatActivity() {
             updateNextAlarmBanner()
             updateTimerViews()
             updateStopwatch()
-            handler.postDelayed(this, if (stopwatchStore.running) 60 else 1_000)
+            handler.postDelayed(this, if (stopwatchStore.running) 33 else 1_000)
         }
     }
 
@@ -96,6 +96,14 @@ class MainActivity : AppCompatActivity() {
         // Daily auto-update check, off the main thread. The application context keeps
         // the worker from pinning this activity for the whole network round-trip.
         Thread { UpdateManager.maybeDailyCheck(applicationContext) }.start()
+    }
+
+    override fun onRestoreInstanceState(savedInstanceState: Bundle) {
+        super.onRestoreInstanceState(savedInstanceState)
+        // The bottom nav restores its own selected item without firing the listener,
+        // while the tab containers restart at their XML defaults (alarms visible) —
+        // re-sync so the highlighted tab is also the one on screen.
+        showTab(binding.bottomNav.selectedItemId)
     }
 
     override fun onResume() {
@@ -308,11 +316,13 @@ class MainActivity : AppCompatActivity() {
             if (stopwatchStore.running) {
                 stopwatchStore.addLap()
                 lapAdapter.submit(stopwatchStore.laps())
-            } else {
-                stopwatchStore.reset()
-                lapAdapter.submit(emptyList())
-                updateStopwatch()
             }
+        }
+        // Reset works even mid-run: one tap does pause + reset.
+        binding.stopwatchReset.setOnClickListener {
+            stopwatchStore.reset()
+            lapAdapter.submit(emptyList())
+            updateStopwatch()
         }
     }
 
@@ -321,10 +331,8 @@ class MainActivity : AppCompatActivity() {
         binding.stopwatchDisplay.text = Format.stopwatch(stopwatchStore.elapsed())
         binding.stopwatchToggle.text =
             getString(if (running) R.string.stopwatch_pause else R.string.timer_start)
-        // While running the secondary button laps; while paused it resets.
-        binding.stopwatchLap.text =
-            getString(if (running) R.string.stopwatch_lap else R.string.stopwatch_reset)
-        binding.stopwatchLap.isEnabled = running || stopwatchStore.elapsed() > 0
+        binding.stopwatchLap.isEnabled = running
+        binding.stopwatchReset.isEnabled = running || stopwatchStore.elapsed() > 0
     }
 
     // ---- Tabs ----
