@@ -40,7 +40,7 @@ object TickingNotifications {
             store.isRunning -> {
                 ensureChannel(context, "timer", R.string.timer_running_channel)
                 val end = store.endTime
-                val builder = base(context, "timer")
+                val builder = base(context, "timer", R.drawable.ic_timer)
                     .setContentTitle(context.getString(R.string.timer_notification_title))
                     .setContentText(
                         context.getString(R.string.timer_notification_text, Format.time(context, end))
@@ -49,6 +49,11 @@ object TickingNotifications {
                     .setChronometerCountDown(true)
                     .setWhen(end)
                     .setOngoing(true)
+                    .setCategory(NotificationCompat.CATEGORY_ALARM)
+                    // Android 16+ Live Update: status-bar chip + lock-screen card.
+                    // The chip text is static, so show the (fixed) ring time.
+                    .setShortCriticalText(Format.time(context, end))
+                    .setRequestPromotedOngoing(true)
                     .addAction(0, context.getString(R.string.stopwatch_pause),
                         action(context, ACTION_TIMER_PAUSE, 10))
                     .addAction(0, context.getString(R.string.plus_one_minute),
@@ -57,11 +62,14 @@ object TickingNotifications {
             }
             store.isPaused -> {
                 ensureChannel(context, "timer", R.string.timer_running_channel)
-                val builder = base(context, "timer")
+                val builder = base(context, "timer", R.drawable.ic_timer)
                     .setContentTitle(context.getString(R.string.timer_paused_title))
                     .setContentText(hms(store.pausedRemaining))
                     .setShowWhen(false)
                     .setOngoing(true)
+                    .setCategory(NotificationCompat.CATEGORY_ALARM)
+                    .setShortCriticalText(hms(store.pausedRemaining))
+                    .setRequestPromotedOngoing(true)
                     .addAction(0, context.getString(R.string.action_resume),
                         action(context, ACTION_TIMER_RESUME, 12))
                     .addAction(0, context.getString(R.string.stopwatch_reset),
@@ -84,6 +92,10 @@ object TickingNotifications {
                     .setUsesChronometer(true)
                     .setWhen(System.currentTimeMillis() - store.elapsed())
                     .setOngoing(true)
+                    .setCategory(NotificationCompat.CATEGORY_STOPWATCH)
+                    // Live Update chip: no static text is truthful for a counter that
+                    // only ticks in the expanded view, so the chip shows the icon.
+                    .setRequestPromotedOngoing(true)
                     .addAction(0, context.getString(R.string.stopwatch_pause),
                         action(context, ACTION_STOPWATCH_PAUSE, 14))
                     .addAction(0, context.getString(R.string.stopwatch_lap),
@@ -154,6 +166,9 @@ object TickingNotifications {
         )
         return NotificationCompat.Builder(context, channel)
             .setSmallIcon(icon)
+            .setColor(context.getColor(R.color.primary))
+            // Timer/stopwatch state is not sensitive: show it fully on the lock screen.
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setContentIntent(open)
     }
 
