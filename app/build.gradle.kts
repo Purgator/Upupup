@@ -7,7 +7,8 @@ plugins {
 
 android {
     namespace = "fr.arichard.upupup"
-    compileSdk = 34
+    // 36 for the Android 16 Live Updates APIs (promoted ongoing notifications).
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "fr.arichard.upupup"
@@ -54,7 +55,8 @@ android {
 }
 
 dependencies {
-    implementation("androidx.core:core-ktx:1.13.1")
+    // 1.17+: NotificationCompat support for Live Updates (setRequestPromotedOngoing).
+    implementation("androidx.core:core-ktx:1.17.0")
     implementation("androidx.appcompat:appcompat:1.7.0")
     implementation("com.google.android.material:material:1.12.0")
     implementation("androidx.recyclerview:recyclerview:1.3.2")

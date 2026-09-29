@@ -30,9 +30,11 @@ every user-facing string exists in EN (`values/strings.xml`) and FR (`values-fr/
 ./gradlew assembleRelease        # signed if keystore.properties present
 ```
 
-- JDK 17. SDK path in `local.properties` (gitignored) →
+- JDK 17 — pinned via `org.gradle.java.home` in `gradle.properties` (the machine's
+  default JDK 25 breaks AGP). SDK path in `local.properties` (gitignored) →
   `C:/dev/Perso/AdBlocker4Android/.tools/android-sdk` on the dev machine (shared with
-  the DNS67 project). Gradle 8.7 / AGP 8.5.2 / Kotlin 1.9.24, minSdk 26, target 34.
+  the DNS67 project). Gradle 8.13 / AGP 8.9.2 / Kotlin 2.0.21, minSdk 26, target 34,
+  compileSdk 36 (Android 16 Live Updates APIs).
 - Signing: `release.keystore` + `keystore.properties` at repo root, **gitignored**.
   They are a copy of the DNS67 certificate — recover from
   `C:/dev/Perso/AdBlocker4Android/` if missing. Never commit them.
