@@ -49,7 +49,7 @@ every user-facing string exists in EN (`values/strings.xml`) and FR (`values-fr/
 ## Conventions
 
 - **Gitmoji commit messages** (🎉 ✨ 🐛 💄 🔊 ✅ 📝 🔖 ⚡ 🚨 …), one logical feature per
-  commit, imperative summary. Commits end with the Claude co-author trailer.
+  commit, imperative summary. Never add a Co-Authored-By trailer.
 - Small, dependency-light code. Persistence = JSON in `SharedPreferences` (no DB).
 - Every new user-facing string goes to both `values/strings.xml` and `values-fr/`.
 - Add/adjust unit tests for pure logic (trigger math, JSON round-trip + legacy
