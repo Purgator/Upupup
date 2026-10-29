@@ -307,9 +307,15 @@ class AlarmEditActivity : AppCompatActivity() {
                 insetTop = 0
                 insetBottom = 0
                 minWidth = 0
+                setPaddingRelative(0, paddingTop, 0, paddingBottom)
+                maxLines = 1
                 layoutParams = android.widget.LinearLayout.LayoutParams(
                     0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, 1f
-                ).apply { marginEnd = (resources.displayMetrics.density * 4).toInt() }
+                ).apply {
+                    val half = (resources.displayMetrics.density * 2).toInt()
+                    marginStart = half
+                    marginEnd = half
+                }
                 addOnCheckedChangeListener { _, checked ->
                     draft = draft.copy(
                         days = if (checked) draft.days + day else draft.days - day
