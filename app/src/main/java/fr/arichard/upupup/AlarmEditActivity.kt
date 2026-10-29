@@ -70,6 +70,11 @@ class AlarmEditActivity : AppCompatActivity() {
             draft = it
             isNew = false
         }
+        if (isNew) {
+            store.defaultAlarm()?.let { previous ->
+                draft = previous.copy(id = System.currentTimeMillis())
+            }
+        }
         original = draft
 
         binding.toolbar.title = getString(if (isNew) R.string.new_alarm else R.string.edit_alarm)
@@ -136,6 +141,7 @@ class AlarmEditActivity : AppCompatActivity() {
     private fun save() {
         draft = currentDraft().copy(enabled = true)
         store.save(draft)
+        store.saveAsDefault(draft)
         store.clearSnooze(draft.id)
         AlarmScheduler.schedule(this, draft, store)
         val delay = draft.nextTrigger() - System.currentTimeMillis()

@@ -2,6 +2,7 @@ package fr.arichard.upupup.core
 
 import android.content.Context
 import org.json.JSONArray
+import org.json.JSONObject
 
 /**
  * SharedPreferences-backed alarm storage plus transient snooze state.
@@ -24,6 +25,20 @@ class AlarmStore(context: Context) {
     fun get(id: Long): Alarm? = all().firstOrNull { it.id == id }
 
     fun save(alarm: Alarm) = write(all().filter { it.id != alarm.id } + alarm)
+
+    /**
+     * Saves [alarm] as the template used when the next alarm is created.
+     * The alarm list and the template are kept separately so editing an alarm
+     * does not create an extra alarm or affect the saved alarm's id.
+     */
+    fun saveAsDefault(alarm: Alarm) {
+        prefs.edit().putString(KEY_DEFAULT, alarm.toJson().toString()).apply()
+    }
+
+    /** Returns the last saved alarm configuration, or null before the first save. */
+    fun defaultAlarm(): Alarm? = prefs.getString(KEY_DEFAULT, null)?.let { raw ->
+        runCatching { Alarm.fromJson(JSONObject(raw)) }.getOrNull()
+    }
 
     fun delete(id: Long) {
         write(all().filter { it.id != id })
@@ -66,5 +81,6 @@ class AlarmStore(context: Context) {
 
     private companion object {
         const val KEY_ALARMS = "alarms_json"
+        const val KEY_DEFAULT = "default_alarm_json"
     }
 }
