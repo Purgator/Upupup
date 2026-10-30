@@ -11,6 +11,17 @@
         android:layout_height="?attr/actionBarSize"
         android:title="@string/settings_title" />
 
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical">
+
     <LinearLayout
         android:id="@+id/row_output"
         style="@style/OptionRow">
@@ -103,6 +114,22 @@
         android:text="@string/auto_update_summary"
         android:textSize="13sp" />
 
+    <com.google.android.material.materialswitch.MaterialSwitch
+        android:id="@+id/release_notes_switch"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingHorizontal="16dp"
+        android:paddingVertical="12dp"
+        android:text="@string/show_release_notes_setting" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingHorizontal="16dp"
+        android:paddingBottom="12dp"
+        android:text="@string/show_release_notes_setting_summary"
+        android:textSize="13sp" />
+
     <com.google.android.material.button.MaterialButton
         android:id="@+id/check_now_button"
         style="@style/Widget.Material3.Button.OutlinedButton"
@@ -142,4 +169,6 @@
         android:padding="16dp"
         android:textSize="13sp"
         tools:text="Version 1.0" />
+        </LinearLayout>
+    </ScrollView>
 </LinearLayout>

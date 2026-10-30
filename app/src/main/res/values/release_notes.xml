@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Add one localized array per release and register it in core/ReleaseNotes.kt. -->
+    <string-array name="release_notes_1_13">
+        <item>🔇 Mission sound pauses while you work; it rings if you stop</item>
+        <item>🐛 Weekday buttons fit narrow screens</item>
+        <item>📰 Update notes include skipped versions</item>
+    </string-array>
+</resources>

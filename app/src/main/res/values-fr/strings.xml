@@ -165,6 +165,10 @@
     <string name="update_error">Échec de la mise à jour : %1$s</string>
     <string name="update_channel">Mises à jour</string>
     <string name="version_info">Version %1$s</string>
+    <string name="release_notes_title">Quoi de neuf dans Upupup ?</string>
+    <string name="show_release_notes_setting">Afficher les nouveautés après les mises à jour</string>
+    <string name="show_release_notes_setting_summary">Un bref résumé présente les changements, y compris ceux des versions ignorées</string>
+    <string name="show_release_notes_next_time">Afficher les nouveautés après les prochaines mises à jour</string>
 
     <!-- Phrases de la mission frappe -->
     <string-array name="typing_phrases">

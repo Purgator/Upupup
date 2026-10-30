@@ -36,6 +36,8 @@ No ads, no account, no paid tier, no tracking. ~4.5 MB.
 - **Auto-update** — checks GitHub once a day and updates itself (downloads on Wi-Fi
   only, and Android verifies the signature before installing). Can be disabled in
   settings.
+- **What’s new** — after an update, a short popup summarizes changes from every newly
+  installed version. Can be disabled in settings.
 - English and French.
 
 ## Install (for everyone)
@@ -94,13 +96,16 @@ Alarms are JSON in `SharedPreferences`.
 | `core/BootReceiver` | Re-arms everything after reboot / update / time change |
 | `RingActivity` | Lock-screen ringing UI + the five wake-up missions |
 | `core/UpdateManager` | Daily GitHub-release check, background download, self-install |
+| `core/ReleaseNotes` | Localized per-version notes shown after updates |
 
 ### Publishing a release
 
-1. Bump `versionCode` / `versionName` in `app/build.gradle.kts`.
-2. `./gradlew assembleRelease`
-3. Upload the APK as `Upupup.apk` on a GitHub release tagged `vX.Y` — installed apps
-   pick it up within a day.
+1. Add concise, emoji-prefixed notes for the version to both `values/release_notes.xml`
+   and `values-fr/release_notes.xml`, then register it in `core/ReleaseNotes.kt`.
+2. Bump `versionCode` / `versionName` in `app/build.gradle.kts`.
+3. `./gradlew assembleRelease`
+4. Upload the APK as `Upupup.apk` on a GitHub release tagged `vX.Y`, using the English
+   notes as the release description — installed apps pick it up within a day.
 
 ## License
 

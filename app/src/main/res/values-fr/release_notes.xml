@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="release_notes_1_13">
+        <item>🔇 Le son se coupe pendant la mission et reprend si vous arrêtez</item>
+        <item>🐛 Les boutons des jours tiennent sur les petits écrans</item>
+        <item>📰 Les nouveautés incluent aussi les versions ignorées</item>
+    </string-array>
+</resources>

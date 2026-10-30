@@ -51,6 +51,16 @@ class Prefs(context: Context) {
         get() = prefs.getBoolean("update_deferred", false)
         set(value) = prefs.edit().putBoolean("update_deferred", value).apply()
 
+    /** Show the release-notes popup after app updates. */
+    var showReleaseNotes: Boolean
+        get() = prefs.getBoolean("show_release_notes", true)
+        set(value) = prefs.edit().putBoolean("show_release_notes", value).apply()
+
+    /** Version whose release notes were last shown. */
+    var lastSeenVersion: String?
+        get() = prefs.getString("last_seen_version", null)
+        set(value) = prefs.edit().putString("last_seen_version", value).apply()
+
     /** One-time prompts we don't want to nag about. */
     var fullScreenPromptShown: Boolean
         get() = prefs.getBoolean("fullscreen_prompt_shown", false)

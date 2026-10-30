@@ -64,6 +64,10 @@ class SettingsActivity : AppCompatActivity() {
         binding.autoUpdateSwitch.setOnCheckedChangeListener { _, checked ->
             prefs.autoUpdate = checked
         }
+        binding.releaseNotesSwitch.isChecked = prefs.showReleaseNotes
+        binding.releaseNotesSwitch.setOnCheckedChangeListener { _, checked ->
+            prefs.showReleaseNotes = checked
+        }
 
         binding.versionText.text =
             getString(R.string.version_info, UpdateManager.currentVersion(this))

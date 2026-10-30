@@ -173,6 +173,10 @@
     <string name="update_error">Update failed: %1$s</string>
     <string name="update_channel">App updates</string>
     <string name="version_info">Version %1$s</string>
+    <string name="release_notes_title">What’s new in Upupup</string>
+    <string name="show_release_notes_setting">Show release notes after updates</string>
+    <string name="show_release_notes_setting_summary">A short summary lists what changed, including any versions you skipped</string>
+    <string name="show_release_notes_next_time">Show release notes after future updates</string>
 
     <!-- Typing mission phrases -->
     <string-array name="typing_phrases">

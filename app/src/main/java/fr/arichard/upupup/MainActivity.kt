@@ -5,23 +5,30 @@ import android.app.AlarmManager
 import android.app.NotificationManager
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Typeface
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
+import android.text.SpannableStringBuilder
+import android.text.Spanned
+import android.text.style.StyleSpan
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.google.android.material.checkbox.MaterialCheckBox
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import fr.arichard.upupup.core.AlarmScheduler
 import fr.arichard.upupup.core.AlarmStore
 import fr.arichard.upupup.core.Format
 import fr.arichard.upupup.core.Output
 import fr.arichard.upupup.core.Prefs
+import fr.arichard.upupup.core.ReleaseNotes
 import fr.arichard.upupup.core.StopwatchStore
 import fr.arichard.upupup.core.TickingNotifications
 import fr.arichard.upupup.core.TimerController
@@ -91,6 +98,7 @@ class MainActivity : AppCompatActivity() {
 
         setupTimerTab()
         setupStopwatchTab()
+        showReleaseNotesIfUpdated()
         requestNeededPermissions()
 
         // Daily auto-update check, off the main thread. The application context keeps
@@ -333,6 +341,46 @@ class MainActivity : AppCompatActivity() {
             getString(if (running) R.string.stopwatch_pause else R.string.timer_start)
         binding.stopwatchLap.isEnabled = running
         binding.stopwatchReset.isEnabled = running || stopwatchStore.elapsed() > 0
+    }
+
+    // ---- Release notes ----
+
+    private fun showReleaseNotesIfUpdated() {
+        val notes = ReleaseNotes.pending(this)
+        if (notes.isEmpty()) {
+            ReleaseNotes.markSeen(this)
+            return
+        }
+
+        val view = layoutInflater.inflate(R.layout.dialog_release_notes, null)
+        val text = SpannableStringBuilder()
+        notes.forEachIndexed { index, (version, items) ->
+            if (index > 0) text.append("\n\n")
+            val headingStart = text.length
+            text.append(getString(R.string.version_info, version))
+            text.setSpan(
+                StyleSpan(Typeface.BOLD),
+                headingStart,
+                text.length,
+                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
+            )
+            items.forEach { text.append("\n").append(it) }
+        }
+        view.findViewById<TextView>(R.id.release_notes_text).text = text
+        val checkbox = view.findViewById<MaterialCheckBox>(R.id.release_notes_show_checkbox)
+        checkbox.isChecked = true
+
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.release_notes_title)
+            .setView(view)
+            .setPositiveButton(android.R.string.ok, null)
+            .setOnDismissListener {
+                if (!isChangingConfigurations) {
+                    Prefs(this).showReleaseNotes = checkbox.isChecked
+                    ReleaseNotes.markSeen(this)
+                }
+            }
+            .show()
     }
 
     // ---- Tabs ----
