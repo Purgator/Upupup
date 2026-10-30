@@ -38,6 +38,9 @@ class AlarmService : Service() {
     private var wakeLock: PowerManager.WakeLock? = null
     private var previousVolume = -1
     private var audioManager: AudioManager? = null
+    private var missionQuiet: MissionQuiet? = null
+    private var rampActive = false
+    private val lapseRunnable = Runnable { onQuietLapse() }
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -45,6 +48,14 @@ class AlarmService : Service() {
         when (intent?.action) {
             ACTION_SNOOZE -> { snooze(); return START_NOT_STICKY }
             ACTION_DISMISS -> { dismiss(); return START_NOT_STICKY }
+            ACTION_MISSION_ACTIVE -> {
+                onMissionActive(intent.getLongExtra(EXTRA_MISSION_ALARM_ID, -1), startId)
+                return START_NOT_STICKY
+            }
+            ACTION_MISSION_LEFT -> {
+                onMissionLeft(intent.getLongExtra(EXTRA_MISSION_ALARM_ID, -1), startId)
+                return START_NOT_STICKY
+            }
         }
 
         val id = intent?.getLongExtra(AlarmReceiver.EXTRA_ID, -1) ?: -1
@@ -62,6 +73,11 @@ class AlarmService : Service() {
 
         current = alarm
         currentIsTimer = isTimer
+        missionQuiet = if (!isTimer && alarm.mission != Mission.NONE && Prefs(this).missionQuiet) {
+            MissionQuiet()
+        } else {
+            null
+        }
         if (isTimer) {
             // Remove the countdown notification; the ringing one takes over.
             getSystemService(NotificationManager::class.java).cancel(NOTIFICATION_ID_TIMER)
@@ -121,6 +137,8 @@ class AlarmService : Service() {
 
     private fun stopRinging() {
         handler.removeCallbacksAndMessages(null)
+        missionQuiet = null
+        rampActive = false
         runCatching { player?.stop() }
         runCatching { player?.release() }
         player = null
@@ -154,10 +172,15 @@ class AlarmService : Service() {
         val target = (max * alarm.volume / 100).coerceIn(1, max)
         runCatching { am.setStreamVolume(AudioManager.STREAM_ALARM, target, 0) }
 
+        startPlayer(alarm, ramp = alarm.rampUp)
+    }
+
+    private fun startPlayer(alarm: Alarm, ramp: Boolean) {
         val uri = alarm.soundUri?.let(Uri::parse)
             ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
             ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE)
 
+        rampActive = ramp
         try {
             // Assigned before configuration so a throwing prepare() can still release it.
             val mp = MediaPlayer()
@@ -174,25 +197,72 @@ class AlarmService : Service() {
                 if (Build.VERSION.SDK_INT >= 28) {
                     preferredOutputDevice(alarm.output)?.let { setPreferredDevice(it) }
                 }
-                if (alarm.rampUp) setVolume(RAMP_START, RAMP_START)
+                if (ramp) setVolume(RAMP_START, RAMP_START)
                 prepare()
                 start()
             }
-            if (alarm.rampUp) rampVolume()
+            if (ramp) rampVolume()
         } catch (e: Exception) {
             Log.e(TAG, "Could not play $uri, vibrating only", e)
             runCatching { player?.release() }
             player = null
+            rampActive = false
             startVibration() // last resort: at least wake the user somehow
         }
     }
 
     /** Steps the player volume from [RAMP_START] to 1.0 over one minute. */
     private fun rampVolume(step: Int = 0) {
+        if (!rampActive) return
         val fraction = (RAMP_START + (1f - RAMP_START) * step / RAMP_STEPS).coerceAtMost(1f)
         player?.setVolume(fraction, fraction)
         if (step < RAMP_STEPS) {
             handler.postDelayed({ rampVolume(step + 1) }, RAMP_INTERVAL_MS)
+        } else {
+            rampActive = false
+        }
+    }
+
+    // ---- Mission quiet ----
+
+    private fun onMissionActive(alarmId: Long, startId: Int) {
+        val alarm = current ?: run { stopSelf(startId); return }
+        if (alarm.id != alarmId) return
+        val quiet = missionQuiet ?: return
+        if (quiet.onActivity()) pauseSound()
+        handler.removeCallbacks(lapseRunnable)
+        handler.postDelayed(lapseRunnable, quiet.windowMs)
+    }
+
+    private fun onMissionLeft(alarmId: Long, startId: Int) {
+        val alarm = current ?: run { stopSelf(startId); return }
+        if (alarm.id != alarmId || missionQuiet == null) return
+        handler.removeCallbacks(lapseRunnable)
+        onQuietLapse()
+    }
+
+    private fun onQuietLapse() {
+        if (missionQuiet?.onLapse() == true) resumeSound()
+    }
+
+    /** Mission in progress: silence only the player; stream volume and vibration are untouched. */
+    private fun pauseSound() {
+        runCatching { player?.pause() }
+            .onFailure { Log.w(TAG, "Could not pause alarm sound", it) }
+    }
+
+    /** Inactivity: ring again at full volume without restarting the initial ramp. */
+    private fun resumeSound() {
+        rampActive = false
+        val mp = player ?: return // Sound failed at ring time; vibration remains the fallback.
+        try {
+            mp.setVolume(1f, 1f)
+            mp.start()
+        } catch (e: Exception) {
+            Log.e(TAG, "Could not resume alarm sound; recreating player", e)
+            runCatching { mp.release() }
+            player = null
+            current?.let { startPlayer(it, ramp = false) }
         }
     }
 
@@ -283,6 +353,9 @@ class AlarmService : Service() {
 
         const val ACTION_SNOOZE = "fr.arichard.upupup.action.SNOOZE"
         const val ACTION_DISMISS = "fr.arichard.upupup.action.DISMISS"
+        const val ACTION_MISSION_ACTIVE = "fr.arichard.upupup.action.MISSION_ACTIVE"
+        const val ACTION_MISSION_LEFT = "fr.arichard.upupup.action.MISSION_LEFT"
+        private const val EXTRA_MISSION_ALARM_ID = "mission_alarm_id"
 
         /** The alarm currently ringing, readable by [RingActivity]. */
         @Volatile
@@ -316,6 +389,20 @@ class AlarmService : Service() {
 
         fun snooze(context: Context) = command(context, ACTION_SNOOZE)
         fun dismiss(context: Context) = command(context, ACTION_DISMISS)
+        fun missionActive(context: Context, alarmId: Long) =
+            missionCommand(context, ACTION_MISSION_ACTIVE, alarmId)
+        fun missionLeft(context: Context, alarmId: Long) =
+            missionCommand(context, ACTION_MISSION_LEFT, alarmId)
+
+        private fun missionCommand(context: Context, action: String, alarmId: Long) {
+            if (current == null) return
+            runCatching {
+                context.startService(
+                    Intent(context, AlarmService::class.java).setAction(action)
+                        .putExtra(EXTRA_MISSION_ALARM_ID, alarmId)
+                )
+            }.onFailure { Log.w(TAG, "Mission signal $action not delivered", it) }
+        }
 
         private fun command(context: Context, action: String) {
             context.startService(Intent(context, AlarmService::class.java).setAction(action))

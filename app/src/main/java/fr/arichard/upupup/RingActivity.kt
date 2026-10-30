@@ -40,6 +40,9 @@ class RingActivity : AppCompatActivity() {
     private var snoozeGestureDetector: android.view.GestureDetector? = null
     private var swipeHelperAnimator: android.animation.ObjectAnimator? = null
     private var isPreview = false
+    private var missionActive = false
+    private var missionScreenResumed = false
+    private var lastMissionPingAt = 0L
 
     private var shakeDetector: ShakeDetector? = null
     private var stepDetector: StepDetector? = null
@@ -113,8 +116,7 @@ class RingActivity : AppCompatActivity() {
             binding.startMissionButton.setIconResource(missionIcon(alarm.mission))
             binding.startMissionButton.setOnClickListener {
                 binding.startMissionButton.visibility = View.GONE
-                startMission(alarm.mission, alarm.missionLevel)
-                startSensors()
+                beginMission(alarm)
             }
         }
     }
@@ -186,8 +188,28 @@ class RingActivity : AppCompatActivity() {
             return
         }
         binding.stopSliderContainer.visibility = View.GONE
+        beginMission(alarm)
+    }
+
+    // ---- Mission quiet: tell the service when the user is actively working ----
+
+    private fun reportMissionActivity(force: Boolean = false) {
+        if (isPreview || !missionActive || !missionScreenResumed) return
+        val alarm = ringingAlarm ?: return
+        val now = android.os.SystemClock.elapsedRealtime()
+        if (!force && now - lastMissionPingAt < MISSION_PING_INTERVAL_MS) return
+        lastMissionPingAt = now
+        AlarmService.missionActive(this, alarm.id)
+    }
+
+    private fun beginMission(alarm: fr.arichard.upupup.core.Alarm) {
         startMission(alarm.mission, alarm.missionLevel)
+        missionActive = true
         startSensors()
+        reportMissionActivity(force = true)
+        if (fr.arichard.upupup.core.Prefs(this).missionQuiet) {
+            Toast.makeText(this, R.string.mission_quiet_hint, Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun startMission(mission: Mission, level: Int) {
@@ -256,6 +278,7 @@ class RingActivity : AppCompatActivity() {
 
     private fun doSnooze() {
         val alarm = ringingAlarm ?: return
+        missionActive = false
         val until = System.currentTimeMillis() + alarm.snoozeMinutes * 60_000L
         Toast.makeText(
             applicationContext,
@@ -272,6 +295,7 @@ class RingActivity : AppCompatActivity() {
     }
 
     private fun stopAlarm() {
+        missionActive = false
         if (isPreview) {
             Toast.makeText(applicationContext, R.string.mission_test_done, Toast.LENGTH_SHORT)
                 .show()
@@ -321,6 +345,7 @@ class RingActivity : AppCompatActivity() {
 
     private fun onCountEvent() {
         if (countLeft <= 0) return
+        reportMissionActivity()
         countLeft--
         binding.counterValue.text = countLeft.toString()
         blip() // haptic feedback so the shake/step registers even eyes-closed
@@ -354,6 +379,7 @@ class RingActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        missionScreenResumed = true
         startSensors()
     }
 
@@ -371,9 +397,14 @@ class RingActivity : AppCompatActivity() {
     }
 
     override fun onPause() {
+        missionScreenResumed = false
         val sensors = getSystemService(SensorManager::class.java)
         shakeDetector?.stop(sensors)
         stepDetector?.stop(sensors)
+        if (missionActive && !isPreview) {
+            ringingAlarm?.let { AlarmService.missionLeft(this, it.id) }
+            lastMissionPingAt = 0L
+        }
         super.onPause()
     }
 
@@ -414,6 +445,7 @@ class RingActivity : AppCompatActivity() {
     }
 
     private fun onKey(key: String, difficulty: Int) {
+        reportMissionActivity()
         when (key) {
             getString(R.string.keypad_clear) -> mathInput.clear()
             getString(R.string.keypad_ok) -> {
@@ -447,6 +479,7 @@ class RingActivity : AppCompatActivity() {
         binding.typingInput.requestFocus()
         binding.typingInput.addTextChangedListener(object : android.text.TextWatcher {
             override fun afterTextChanged(s: android.text.Editable) {
+                reportMissionActivity()
                 if (normalize(s.toString()) == normalize(phrases[phrasesTyped])) {
                     phrasesTyped++
                     if (phrasesTyped >= phrases.size) {
@@ -507,6 +540,7 @@ class RingActivity : AppCompatActivity() {
         handler.postDelayed({
             binding.memoryStatus.text = getString(R.string.memory_repeat)
             memoryInputEnabled = true
+            reportMissionActivity()
         }, 700L * memorySequence.size + 500)
     }
 
@@ -517,6 +551,7 @@ class RingActivity : AppCompatActivity() {
 
     private fun onTileTapped(index: Int) {
         if (!memoryInputEnabled) return
+        reportMissionActivity()
         if (index == memorySequence[memoryPosition]) {
             flashTile(index, TILE_GOOD)
             memoryPosition++
@@ -544,6 +579,7 @@ class RingActivity : AppCompatActivity() {
 
     companion object {
         private var instance: WeakReference<RingActivity>? = null
+        private const val MISSION_PING_INTERVAL_MS = 2_000L
 
         private val TILE_IDLE = Color.parseColor("#2E3560")
         private val TILE_SHOW = Color.parseColor("#FF8F2E")

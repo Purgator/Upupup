@@ -56,6 +56,10 @@ class SettingsActivity : AppCompatActivity() {
         binding.swipeSnoozeSwitch.setOnCheckedChangeListener { _, checked ->
             prefs.swipeToSnooze = checked
         }
+        binding.missionQuietSwitch.isChecked = prefs.missionQuiet
+        binding.missionQuietSwitch.setOnCheckedChangeListener { _, checked ->
+            prefs.missionQuiet = checked
+        }
         binding.autoUpdateSwitch.isChecked = prefs.autoUpdate
         binding.autoUpdateSwitch.setOnCheckedChangeListener { _, checked ->
             prefs.autoUpdate = checked
