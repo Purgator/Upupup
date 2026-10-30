@@ -109,4 +109,4 @@ Alarms are JSON in `SharedPreferences`.
 
 ## License
 
-[GNU General Public License v3.0](LICENSE)
+[GNU General Public License v3.0 or later](LICENSE) (`GPL-3.0-or-later`)
