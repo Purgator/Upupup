@@ -32,7 +32,7 @@ class Prefs(context: Context) {
         get() = prefs.getBoolean("swipe_to_snooze", true)
         set(value) = prefs.edit().putBoolean("swipe_to_snooze", value).apply()
 
-    /** Pause the alarm sound while the user is actively doing the wake-up mission. */
+    /** Pause alarm sound and vibration while the user is actively doing the wake-up mission. */
     var missionQuiet: Boolean
         get() = prefs.getBoolean("mission_quiet", true)
         set(value) = prefs.edit().putBoolean("mission_quiet", value).apply()

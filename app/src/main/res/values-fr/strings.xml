@@ -115,7 +115,7 @@
     <string name="keypad_ok">OK</string>
     <string name="keypad_clear">C</string>
     <string name="snoozed_until">Rappel à %1$s</string>
-    <string name="mission_quiet_hint">Son coupé — continuez, sinon l’alarme reprend</string>
+    <string name="mission_quiet_hint">Son et vibration coupés — continuez, sinon l’alarme reprend</string>
 
     <string name="timer_start">Démarrer</string>
     <string name="timer_cancel">Annuler</string>
@@ -149,7 +149,7 @@
     <string name="swipe_snooze_setting">Rappel par balayage vers le haut</string>
     <string name="swipe_snooze_setting_summary">Sur l\'écran d\'alarme, balayez vers le haut au lieu d\'appuyer sur un bouton</string>
     <string name="mission_quiet_setting">Silence pendant la mission</string>
-    <string name="mission_quiet_setting_summary">Le son se coupe pendant la mission et revient si vous vous arrêtez — de plus en plus vite</string>
+    <string name="mission_quiet_setting_summary">Le son et la vibration se coupent pendant la mission et reprennent si vous vous arrêtez — de plus en plus vite</string>
     <string name="auto_update">Mises à jour automatiques</string>
     <string name="auto_update_summary">Vérifie GitHub une fois par jour et télécharge en Wi-Fi</string>
     <string name="check_updates_now">Vérifier les mises à jour</string>

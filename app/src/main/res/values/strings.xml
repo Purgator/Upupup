@@ -119,7 +119,7 @@
     <string name="keypad_ok">OK</string>
     <string name="keypad_clear">C</string>
     <string name="snoozed_until">Snoozed until %1$s</string>
-    <string name="mission_quiet_hint">Sound paused — keep going or it rings again</string>
+    <string name="mission_quiet_hint">Sound and vibration paused — keep going or it rings again</string>
 
     <!-- Timer -->
     <string name="timer_start">Start</string>
@@ -157,7 +157,7 @@
     <string name="swipe_snooze_setting">Swipe up to snooze</string>
     <string name="swipe_snooze_setting_summary">On the ring screen, snooze with an upward swipe instead of a button</string>
     <string name="mission_quiet_setting">Silence while doing the mission</string>
-    <string name="mission_quiet_setting_summary">The sound pauses while you work and comes back if you stop — sooner each time</string>
+    <string name="mission_quiet_setting_summary">Sound and vibration pause while you work and come back if you stop — sooner each time</string>
     <string name="auto_update">Automatic updates</string>
     <string name="auto_update_summary">Checks GitHub once a day and downloads new versions on Wi-Fi</string>
     <string name="check_updates_now">Check for updates now</string>

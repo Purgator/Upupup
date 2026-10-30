@@ -6,6 +6,7 @@ package fr.arichard.upupup.core
  * Every mission activity grants a quiet lease whose length is [windowMs]. If the lease runs
  * out without further activity (a lapse), the alarm rings again and the next lease is
  * shorter, down to the last (floor) window. Activity never resets the lapse count.
+ * The caller silences sound and vibration while [isQuiet].
  *
  * The class holds no clock and no Android dependency: the caller owns the timers and only
  * reports [onActivity] / [onLapse] events. Not thread-safe; use from a single thread.
@@ -52,5 +53,9 @@ class MissionQuiet(windowsMs: LongArray = DEFAULT_WINDOWS_MS) {
     companion object {
         /** Quiet lease lengths: 30 s, then 20 s, 15 s, and finally 10 s for every later lease. */
         val DEFAULT_WINDOWS_MS: LongArray = longArrayOf(30_000L, 20_000L, 15_000L, 10_000L)
+
+        /** Whether vibration is wanted and the quiet lease is not active. */
+        fun shouldVibrate(wanted: Boolean, quiet: MissionQuiet?): Boolean =
+            wanted && quiet?.isQuiet != true
     }
 }

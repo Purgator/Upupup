@@ -35,6 +35,7 @@ class AlarmService : Service() {
     private val handler = Handler(Looper.getMainLooper())
     private var player: MediaPlayer? = null
     private var vibrator: Vibrator? = null
+    private var vibrationWanted = false
     private var wakeLock: PowerManager.WakeLock? = null
     private var previousVolume = -1
     private var audioManager: AudioManager? = null
@@ -144,6 +145,7 @@ class AlarmService : Service() {
         player = null
         vibrator?.cancel()
         vibrator = null
+        vibrationWanted = false
         audioManager?.let { am ->
             if (previousVolume >= 0) {
                 runCatching { am.setStreamVolume(AudioManager.STREAM_ALARM, previousVolume, 0) }
@@ -229,7 +231,10 @@ class AlarmService : Service() {
         val alarm = current ?: run { stopSelf(startId); return }
         if (alarm.id != alarmId) return
         val quiet = missionQuiet ?: return
-        if (quiet.onActivity()) pauseSound()
+        if (quiet.onActivity()) {
+            pauseSound()
+            pauseVibration()
+        }
         handler.removeCallbacks(lapseRunnable)
         handler.postDelayed(lapseRunnable, quiet.windowMs)
     }
@@ -242,10 +247,13 @@ class AlarmService : Service() {
     }
 
     private fun onQuietLapse() {
-        if (missionQuiet?.onLapse() == true) resumeSound()
+        if (missionQuiet?.onLapse() == true) {
+            resumeVibration()
+            resumeSound()
+        }
     }
 
-    /** Mission in progress: silence only the player; stream volume and vibration are untouched. */
+    /** Mission in progress: silence only the player; the stream volume is untouched. */
     private fun pauseSound() {
         runCatching { player?.pause() }
             .onFailure { Log.w(TAG, "Could not pause alarm sound", it) }
@@ -254,7 +262,7 @@ class AlarmService : Service() {
     /** Inactivity: ring again at full volume without restarting the initial ramp. */
     private fun resumeSound() {
         rampActive = false
-        val mp = player ?: return // Sound failed at ring time; vibration remains the fallback.
+        val mp = player ?: return // Sound failed at ring time; resumed vibration is the fallback.
         try {
             mp.setVolume(1f, 1f)
             mp.start()
@@ -289,14 +297,29 @@ class AlarmService : Service() {
     // ---- Vibration ----
 
     private fun startVibration() {
-        if (vibrator != null) return // already going
-        val v = getSystemService(Vibrator::class.java) ?: return
-        vibrator = v
+        if (vibrationWanted) return // already going or paused by a quiet lease
+        vibrationWanted = true
+        if (MissionQuiet.shouldVibrate(vibrationWanted, missionQuiet)) playVibration()
+    }
+
+    private fun playVibration() {
+        val v = vibrator ?: getSystemService(Vibrator::class.java)?.also { vibrator = it } ?: return
         val pattern = longArrayOf(0, 800, 400, 800, 800)
         v.vibrate(
             VibrationEffect.createWaveform(pattern, 0),
             AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_ALARM).build()
         )
+    }
+
+    /** Mission in progress: stop the motor but remember that this ring vibrates. */
+    private fun pauseVibration() {
+        runCatching { vibrator?.cancel() }
+            .onFailure { Log.w(TAG, "Could not pause alarm vibration", it) }
+    }
+
+    /** Inactivity: restart the waveform if this ring vibrates. */
+    private fun resumeVibration() {
+        if (MissionQuiet.shouldVibrate(vibrationWanted, missionQuiet)) playVibration()
     }
 
     // ---- Plumbing ----

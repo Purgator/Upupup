@@ -164,4 +164,67 @@ class MissionQuietTest {
             MissionQuiet.DEFAULT_WINDOWS_MS.toList(),
         )
     }
+
+    @Test
+    fun `vibration follows wanted when quieting is disabled`() {
+        assertTrue(MissionQuiet.shouldVibrate(wanted = true, quiet = null))
+        assertFalse(MissionQuiet.shouldVibrate(wanted = false, quiet = null))
+    }
+
+    @Test
+    fun `vibration is enabled before mission activity`() {
+        assertTrue(MissionQuiet.shouldVibrate(wanted = true, quiet = MissionQuiet()))
+    }
+
+    @Test
+    fun `vibration pauses when mission activity starts`() {
+        val quiet = MissionQuiet()
+        assertTrue(quiet.onActivity())
+        assertFalse(MissionQuiet.shouldVibrate(wanted = true, quiet = quiet))
+    }
+
+    @Test
+    fun `duplicate activity keeps vibration paused`() {
+        val quiet = MissionQuiet()
+        quiet.onActivity()
+        assertFalse(quiet.onActivity())
+        assertFalse(MissionQuiet.shouldVibrate(wanted = true, quiet = quiet))
+    }
+
+    @Test
+    fun `vibration resumes when the quiet lease lapses`() {
+        val quiet = MissionQuiet()
+        quiet.onActivity()
+        assertTrue(quiet.onLapse())
+        assertTrue(MissionQuiet.shouldVibrate(wanted = true, quiet = quiet))
+    }
+
+    @Test
+    fun `vibration stays in sync over several quiet leases`() {
+        val quiet = MissionQuiet()
+        repeat(5) {
+            assertTrue(quiet.onActivity())
+            assertFalse(MissionQuiet.shouldVibrate(wanted = true, quiet = quiet))
+            assertTrue(quiet.onLapse())
+            assertTrue(MissionQuiet.shouldVibrate(wanted = true, quiet = quiet))
+        }
+        assertEquals(10_000L, quiet.windowMs)
+    }
+
+    @Test
+    fun `vibration remains off when the current alarm does not want it`() {
+        val quiet = MissionQuiet()
+        assertFalse(MissionQuiet.shouldVibrate(wanted = false, quiet = quiet))
+        quiet.onActivity()
+        assertFalse(MissionQuiet.shouldVibrate(wanted = false, quiet = quiet))
+        quiet.onLapse()
+        assertFalse(MissionQuiet.shouldVibrate(wanted = false, quiet = quiet))
+    }
+
+    @Test
+    fun `ignored lapse while ringing keeps vibration enabled`() {
+        val quiet = MissionQuiet()
+        assertFalse(quiet.onLapse())
+        assertTrue(MissionQuiet.shouldVibrate(wanted = true, quiet = quiet))
+    }
 }
