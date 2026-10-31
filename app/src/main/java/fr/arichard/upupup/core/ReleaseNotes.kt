@@ -11,6 +11,7 @@ object ReleaseNotes {
 
     // Add each release here, newest first, and keep its EN/FR resource arrays in sync.
     private val entries = listOf(
+        "1.14" to R.array.release_notes_1_14,
         "1.13" to R.array.release_notes_1_13,
     )
 
