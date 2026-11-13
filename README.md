@@ -9,6 +9,15 @@ before the noise stops.
 
 No ads, no account, no paid tier, no tracking. ~4.5 MB.
 
+<p align="center">
+  <img src="docs/alarms.png" width="240" alt="Alarm list with the "Rings in" banner and two alarms">
+  <img src="docs/edit-alarm.png" width="240" alt="Alarm editor with repeat days, mission, sound, snooze and volume">
+  <img src="docs/missions.png" width="240" alt="Wake-up mission chooser: shake, math, typing, steps, memory">
+  <img src="docs/math-mission.png" width="240" alt="Math mission asking to solve a problem to stop the alarm">
+</p>
+
+<p align="center"><sub>The alarm list · the alarm editor · the wake-up missions · a math mission in progress.</sub></p>
+
 ## Features
 
 - **Guaranteed ring** — alarms use Android's `setAlarmClock()` API: exact to the
