@@ -42,6 +42,7 @@ class RingActivity : AppCompatActivity() {
     private var isPreview = false
     private var missionActive = false
     private var missionScreenResumed = false
+    private var started = false
     private var lastMissionPingAt = 0L
 
     private var shakeDetector: ShakeDetector? = null
@@ -377,6 +378,16 @@ class RingActivity : AppCompatActivity() {
         )
     }
 
+    override fun onStart() {
+        super.onStart()
+        started = true
+    }
+
+    override fun onStop() {
+        started = false
+        super.onStop()
+    }
+
     override fun onResume() {
         super.onResume()
         missionScreenResumed = true
@@ -589,8 +600,12 @@ class RingActivity : AppCompatActivity() {
         const val EXTRA_PREVIEW_MISSION = "preview_mission"
         const val EXTRA_PREVIEW_LEVEL = "preview_level"
 
-        /** A preview doesn't count: a real ring must still be able to take over. */
-        val isOpen: Boolean get() = instance?.get()?.isPreview == false
+        /**
+         * A preview doesn't count: a real ring must still be able to take over. Neither
+         * does a ring screen left behind with Home: it is alive but out of sight.
+         */
+        private val isShowing: Boolean
+            get() = instance?.get()?.let { !it.isPreview && it.started } == true
 
         /** Called by [AlarmService] when ringing ends for any reason. */
         fun finishIfOpen() {
@@ -598,11 +613,12 @@ class RingActivity : AppCompatActivity() {
         }
 
         /**
-         * Brings the ring screen up when an alarm is ringing and the user is looking
-         * at the app (the full-screen intent only fires when the screen is off/locked).
+         * Brings the ring screen up (or back to the front) when an alarm is ringing and
+         * the user is looking at the app: the full-screen intent only fires when the
+         * screen is off/locked, and Home sends the ring screen to the background.
          */
         fun openIfRinging(activity: Activity) {
-            if (AlarmService.current != null && !isOpen) {
+            if (AlarmService.current != null && !isShowing) {
                 activity.startActivity(
                     Intent(activity, RingActivity::class.java)
                         .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
