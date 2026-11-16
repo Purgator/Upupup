@@ -143,6 +143,7 @@ class AlarmEditActivity : AppCompatActivity() {
         store.save(draft)
         store.saveAsDefault(draft)
         store.clearSnooze(draft.id)
+        store.clearSkip(draft.id)
         AlarmScheduler.schedule(this, draft, store)
         val delay = draft.nextTrigger() - System.currentTimeMillis()
         Toast.makeText(

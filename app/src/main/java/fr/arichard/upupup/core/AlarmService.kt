@@ -49,6 +49,18 @@ class AlarmService : Service() {
         when (intent?.action) {
             ACTION_SNOOZE -> { snooze(); return START_NOT_STICKY }
             ACTION_DISMISS -> { dismiss(); return START_NOT_STICKY }
+            ACTION_RENOTIFY -> {
+                // Android 14+ lets the user swipe away even an ongoing notification.
+                // While ringing it is the way back to the ring screen: repost it.
+                val alarm = current
+                if (alarm == null) {
+                    stopSelf(startId)
+                } else {
+                    getSystemService(NotificationManager::class.java)
+                        .notify(NOTIFICATION_ID, buildNotification(alarm, currentIsTimer))
+                }
+                return START_NOT_STICKY
+            }
             ACTION_MISSION_ACTIVE -> {
                 onMissionActive(intent.getLongExtra(EXTRA_MISSION_ALARM_ID, -1), startId)
                 return START_NOT_STICKY
@@ -115,6 +127,8 @@ class AlarmService : Service() {
             // A snoozed one-shot must come back even though it was disabled at fire time.
             if (alarm.days.isEmpty()) store.save(alarm.copy(enabled = true))
             AlarmScheduler.schedule(this, alarm.copy(enabled = true), store)
+            // Already up before the snooze ends? One tap on this cancels the re-ring.
+            UpcomingAlarm.notify(this, alarm, until, snoozed = true)
         }
         stopRinging()
         stopSelf()
@@ -361,6 +375,14 @@ class AlarmService : Service() {
             .setOngoing(true)
             .setFullScreenIntent(fullScreen, true)
             .setContentIntent(fullScreen)
+            .setDeleteIntent(
+                PendingIntent.getBroadcast(
+                    this, 2,
+                    Intent(this, AlarmReceiver::class.java)
+                        .setAction(AlarmReceiver.ACTION_RENOTIFY),
+                    PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+                )
+            )
             .build()
     }
 
@@ -376,6 +398,7 @@ class AlarmService : Service() {
 
         const val ACTION_SNOOZE = "fr.arichard.upupup.action.SNOOZE"
         const val ACTION_DISMISS = "fr.arichard.upupup.action.DISMISS"
+        private const val ACTION_RENOTIFY = "fr.arichard.upupup.action.SERVICE_RENOTIFY"
         const val ACTION_MISSION_ACTIVE = "fr.arichard.upupup.action.MISSION_ACTIVE"
         const val ACTION_MISSION_LEFT = "fr.arichard.upupup.action.MISSION_LEFT"
         private const val EXTRA_MISSION_ALARM_ID = "mission_alarm_id"
@@ -412,6 +435,13 @@ class AlarmService : Service() {
 
         fun snooze(context: Context) = command(context, ACTION_SNOOZE)
         fun dismiss(context: Context) = command(context, ACTION_DISMISS)
+
+        /** Reposts the ringing notification after the user swiped it away. */
+        fun renotify(context: Context) {
+            if (current == null) return
+            runCatching { command(context, ACTION_RENOTIFY) }
+                .onFailure { Log.w(TAG, "Ringing notification not reposted", it) }
+        }
         fun missionActive(context: Context, alarmId: Long) =
             missionCommand(context, ACTION_MISSION_ACTIVE, alarmId)
         fun missionLeft(context: Context, alarmId: Long) =

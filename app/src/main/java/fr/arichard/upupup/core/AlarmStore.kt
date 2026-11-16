@@ -43,7 +43,25 @@ class AlarmStore(context: Context) {
     fun delete(id: Long) {
         write(all().filter { it.id != id })
         clearSnooze(id)
+        clearSkip(id)
     }
+
+    // ---- Skipped occurrence (repeating alarms dismissed in advance) ----
+
+    /** Trigger time of the occurrence the user dismissed in advance, or 0. */
+    fun skipUntil(id: Long): Long = prefs.getLong("skip_until_$id", 0)
+
+    fun setSkipUntil(id: Long, until: Long) {
+        prefs.edit().putLong("skip_until_$id", until).apply()
+    }
+
+    fun clearSkip(id: Long) {
+        prefs.edit().remove("skip_until_$id").apply()
+    }
+
+    /** When [alarm] will really ring next, honouring a pending snooze and a skipped ring. */
+    fun nextRing(alarm: Alarm, now: Long = System.currentTimeMillis()): Long =
+        alarm.nextRing(now, snoozeUntil(alarm.id), skipUntil(alarm.id))
 
     private fun write(alarms: List<Alarm>) {
         val array = JSONArray().apply { alarms.forEach { put(it.toJson()) } }

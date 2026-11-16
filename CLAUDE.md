@@ -66,6 +66,7 @@ every user-facing string exists in EN (`values/strings.xml`) and FR (`values-fr/
 | `core/AlarmScheduler.kt` | `setAlarmClock` registration + pre-alarm heads-up scheduling |
 | `core/AlarmReceiver.kt` | Fire + pre-alarm notification; re-arms repeats; starts service |
 | `core/AlarmService.kt` | Foreground ring: sound (per-alarm volume forced on alarm stream, ramp, output routing), vibration, full-screen intent, 5-min auto-snooze timeout, `current` static read by the UI |
+| `core/UpcomingAlarm.kt` | Dismiss a ring in advance (skip next occurrence / drop snooze / turn off) + heads-up notification with its "Skip this ring" action |
 | `core/BootReceiver.kt` | Re-arm after boot/update/clock change |
 | `core/TimerStore.kt` / `StopwatchStore.kt` | Countdown & stopwatch persistence (stopwatch uses `elapsedRealtime`) |
 | `core/Prefs.kt` | App settings (swipe snooze, default output, pre-alarm lead, time-picker mode, release notes…) |
@@ -95,7 +96,9 @@ every user-facing string exists in EN (`values/strings.xml`) and FR (`values-fr/
 ## Known sharp edges
 
 - `RingActivity` is `singleInstance`; previews convert to a real ring via `onNewIntent`.
-- Notification ids: 1 ring, 2 update, 3 timer, 4 stopwatch, 100+ pre-alarm heads-ups.
+- Notification ids: 1 ring, 2 update, 3 timer, 4 stopwatch, 100+ pre-alarm / snoozed heads-ups.
+- A skipped occurrence is `skip_until_<id>` in `AlarmStore`; always compute the real next ring with `AlarmStore.nextRing()`, not `Alarm.nextTrigger()`.
+- The ringing notification reposts itself from its delete intent (Android 14+ lets users swipe ongoing notifications).
 - `AlarmService.stopRinging()` restores the user's alarm-stream volume — keep symmetric.
 - Wheel time picker: values typed but not committed are flushed in
   `AlarmEditActivity.currentDraft()` via `clearFocus()`.

@@ -79,6 +79,13 @@ data class Alarm(
         return cal.timeInMillis // unreachable
     }
 
+    /**
+     * When this alarm will really ring next: a pending snooze wins; otherwise the next
+     * occurrence after [skipUntil] (the occurrence the user dismissed in advance, if any).
+     */
+    fun nextRing(now: Long, snoozeUntil: Long = 0, skipUntil: Long = 0): Long =
+        if (snoozeUntil > now) snoozeUntil else nextTrigger(maxOf(now, skipUntil))
+
     fun toJson(): JSONObject = JSONObject().apply {
         put("id", id)
         put("hour", hour)

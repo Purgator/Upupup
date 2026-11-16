@@ -35,16 +35,23 @@ object AlarmScheduler {
             cancel(context, alarm.id)
             return
         }
-        val snoozed = store.snoozeUntil(alarm.id)
-        val at = if (snoozed > System.currentTimeMillis()) snoozed else alarm.nextTrigger()
+        val now = System.currentTimeMillis()
+        val at = store.nextRing(alarm, now)
         setExact(context, alarm.id, at)
         schedulePreAlarm(context, alarm.id, at)
+        // A heads-up left over from a ring that is no longer imminent (skipped, edited,
+        // snooze cancelled) would offer to dismiss the wrong occurrence.
+        val snoozed = store.snoozeUntil(alarm.id) > now
+        if (!snoozed && at - now > Prefs(context).preAlarmMinutes * 60_000L) {
+            UpcomingAlarm.cancelNotification(context, alarm.id)
+        }
     }
 
     fun cancel(context: Context, id: Long) {
         val manager = alarmManager(context)
         manager.cancel(firePendingIntent(context, id))
         manager.cancel(preAlarmPendingIntent(context, id))
+        UpcomingAlarm.cancelNotification(context, id)
     }
 
     /** Heads-up notification a few minutes before the alarm; skipped when too close or off. */

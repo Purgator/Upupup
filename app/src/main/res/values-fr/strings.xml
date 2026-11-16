@@ -21,6 +21,13 @@
     <string name="duration_minutes">%1$dmin</string>
     <string name="duration_less_than_minute">moins d\'une minute</string>
     <string name="delete_alarm">Supprimer</string>
+    <string name="skip_this_ring">Ne pas sonner</string>
+    <string name="restore_ring">Rétablir</string>
+    <string name="next_ring_skipped">Prochaine sonnerie annulée</string>
+    <string name="turn_off_title">Désactiver…</string>
+    <string name="turn_off_next_only">La prochaine sonnerie uniquement</string>
+    <string name="turn_off_snoozed_only">Le rappel en cours uniquement</string>
+    <string name="turn_off_all">Toutes les sonneries</string>
 
     <string name="every_day">Tous les jours</string>
     <string name="weekdays">En semaine</string>

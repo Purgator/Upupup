@@ -22,6 +22,13 @@
     <string name="duration_minutes">%1$dm</string>
     <string name="duration_less_than_minute">less than a minute</string>
     <string name="delete_alarm">Delete</string>
+    <string name="skip_this_ring">Skip this ring</string>
+    <string name="restore_ring">Restore</string>
+    <string name="next_ring_skipped">Next ring skipped</string>
+    <string name="turn_off_title">Turn off…</string>
+    <string name="turn_off_next_only">The next ring only</string>
+    <string name="turn_off_snoozed_only">The snoozed ring only</string>
+    <string name="turn_off_all">All rings</string>
 
     <!-- Days -->
     <string name="every_day">Every day</string>

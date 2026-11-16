@@ -64,6 +64,39 @@ class AlarmTest {
     }
 
     @Test
+    fun `next ring is the plain next trigger without snooze or skip`() {
+        val now = at(Calendar.WEDNESDAY, 6, 0)
+        val alarm = Alarm(id = 1, hour = 7, minute = 30, days = setOf(Calendar.WEDNESDAY))
+        assertEquals(alarm.nextTrigger(now), alarm.nextRing(now))
+        // A skip or snooze that already elapsed changes nothing.
+        assertEquals(
+            alarm.nextTrigger(now),
+            alarm.nextRing(now, snoozeUntil = now - 1, skipUntil = now - 60_000)
+        )
+    }
+
+    @Test
+    fun `pending snooze wins over the regular occurrence`() {
+        val now = at(Calendar.WEDNESDAY, 7, 32)
+        val alarm = Alarm(id = 1, hour = 7, minute = 30, days = setOf(Calendar.WEDNESDAY))
+        assertEquals(now + 3 * 60_000, alarm.nextRing(now, snoozeUntil = now + 3 * 60_000))
+    }
+
+    @Test
+    fun `skipped occurrence is jumped over, the following one rings`() {
+        val now = at(Calendar.WEDNESDAY, 6, 0)
+        val alarm = Alarm(
+            id = 1, hour = 7, minute = 30,
+            days = setOf(Calendar.WEDNESDAY, Calendar.THURSDAY)
+        )
+        val skipped = alarm.nextTrigger(now)
+        val next = alarm.nextRing(now, skipUntil = skipped)
+        assertEquals(skipped + 24 * 60 * 60_000L, next)
+        // Once the skipped time has passed, the schedule is back to normal.
+        assertEquals(next, alarm.nextRing(skipped + 60_000, skipUntil = skipped))
+    }
+
+    @Test
     fun `json round-trip preserves all fields`() {
         val alarm = Alarm(
             id = 42, hour = 6, minute = 15,

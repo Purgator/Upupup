@@ -13,15 +13,25 @@ class AlarmAdapter(
     private val onClick: (Alarm) -> Unit,
     private val onToggle: (Alarm, Boolean) -> Unit,
     private val onLongClick: (Alarm) -> Unit,
+    private val onUpcomingAction: (Alarm, Upcoming) -> Unit,
 ) : RecyclerView.Adapter<AlarmAdapter.Holder>() {
 
+    /** What a card says about its alarm's next ring; [at] is the snooze end for SNOOZED. */
+    enum class Upcoming { SOON, SNOOZED, SKIPPED }
+    data class UpcomingState(val kind: Upcoming, val at: Long = 0)
+
     private var alarms: List<Alarm> = emptyList()
+
+    /** Per alarm id; alarms with nothing to say about their next ring are absent. */
+    var upcoming: Map<Long, UpcomingState> = emptyMap()
+        private set
 
     /** App-wide sound output, shown on cards whose alarm follows the default. */
     var defaultOutput: fr.arichard.upupup.core.Output = fr.arichard.upupup.core.Output.AUTO
 
-    fun submit(list: List<Alarm>) {
+    fun submit(list: List<Alarm>, upcoming: Map<Long, UpcomingState>) {
         alarms = list
+        this.upcoming = upcoming
         @Suppress("NotifyDataSetChanged") // lists are tiny; diffing is not worth it
         notifyDataSetChanged()
     }
@@ -103,6 +113,27 @@ class AlarmAdapter(
             binding.alarmEnabled.isChecked = alarm.enabled
             binding.alarmEnabled.setOnCheckedChangeListener { _, checked ->
                 onToggle(alarm, checked)
+            }
+
+            val state = upcoming[alarm.id]
+            binding.upcomingRow.visibility =
+                if (state == null) android.view.View.GONE else android.view.View.VISIBLE
+            if (state != null) {
+                val status = when (state.kind) {
+                    Upcoming.SOON -> null
+                    Upcoming.SNOOZED -> context.getString(
+                        R.string.snoozed_until, Format.time(context, state.at)
+                    )
+                    Upcoming.SKIPPED -> context.getString(R.string.next_ring_skipped)
+                }
+                binding.upcomingStatus.text = status
+                binding.upcomingStatus.visibility =
+                    if (status == null) android.view.View.GONE else android.view.View.VISIBLE
+                binding.upcomingButton.setText(
+                    if (state.kind == Upcoming.SKIPPED) R.string.restore_ring
+                    else R.string.skip_this_ring
+                )
+                binding.upcomingButton.setOnClickListener { onUpcomingAction(alarm, state.kind) }
             }
 
             binding.root.setOnClickListener { onClick(alarm) }

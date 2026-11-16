@@ -23,6 +23,7 @@ import androidx.core.app.ActivityCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.checkbox.MaterialCheckBox
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import fr.arichard.upupup.core.Alarm
 import fr.arichard.upupup.core.AlarmScheduler
 import fr.arichard.upupup.core.AlarmStore
 import fr.arichard.upupup.core.Format
@@ -33,6 +34,7 @@ import fr.arichard.upupup.core.StopwatchStore
 import fr.arichard.upupup.core.TickingNotifications
 import fr.arichard.upupup.core.TimerController
 import fr.arichard.upupup.core.TimerStore
+import fr.arichard.upupup.core.UpcomingAlarm
 import fr.arichard.upupup.core.UpdateManager
 import fr.arichard.upupup.databinding.ActivityMainBinding
 
@@ -75,14 +77,28 @@ class MainActivity : AppCompatActivity() {
                 )
             },
             onToggle = { alarm, enabled ->
-                val updated = alarm.copy(enabled = enabled)
-                store.save(updated)
-                if (enabled) store.clearSnooze(alarm.id)
-                AlarmScheduler.schedule(this, updated, store)
-                refreshAlarms()
-                if (enabled) toastNextRing(updated)
+                if (enabled) {
+                    val updated = alarm.copy(enabled = true)
+                    store.save(updated)
+                    store.clearSnooze(alarm.id)
+                    store.clearSkip(alarm.id)
+                    AlarmScheduler.schedule(this, updated, store)
+                    refreshAlarms()
+                    toastNextRing(updated)
+                } else {
+                    turnOff(alarm)
+                }
             },
             onLongClick = { alarm -> confirmDelete(alarm.id) },
+            onUpcomingAction = { alarm, kind ->
+                if (kind == AlarmAdapter.Upcoming.SKIPPED) {
+                    UpcomingAlarm.restore(this, alarm, store)
+                } else {
+                    UpcomingAlarm.dismissNext(this, alarm, store)
+                }
+                refreshAlarms()
+                if (alarm.days.isNotEmpty()) toastNextRing(alarm)
+            },
         )
         binding.alarmList.layoutManager = LinearLayoutManager(this)
         binding.alarmList.adapter = adapter
@@ -134,21 +150,73 @@ class MainActivity : AppCompatActivity() {
     private fun refreshAlarms() {
         val alarms = store.all()
         adapter.defaultOutput = Prefs(this).defaultOutput
-        adapter.submit(alarms)
+        adapter.submit(alarms, upcomingStates(alarms))
         binding.emptyView.visibility =
             if (alarms.isEmpty() && selectedTab == R.id.nav_alarms) View.VISIBLE
             else View.GONE
-        updateNextAlarmBanner()
+        updateNextAlarmBanner(alarms)
     }
 
-    private fun updateNextAlarmBanner() {
+    /** Which cards offer to dismiss (or restore) their next ring right now. */
+    private fun upcomingStates(alarms: List<Alarm>): Map<Long, AlarmAdapter.UpcomingState> {
         val now = System.currentTimeMillis()
-        val next = store.all()
-            .filter { it.enabled }
-            .minOfOrNull { alarm ->
-                val snoozed = store.snoozeUntil(alarm.id)
-                if (snoozed > now) snoozed else alarm.nextTrigger(now)
+        val states = mutableMapOf<Long, AlarmAdapter.UpcomingState>()
+        alarms.filter { it.enabled }.forEach { alarm ->
+            val snoozed = store.snoozeUntil(alarm.id)
+            val state = when {
+                snoozed > now ->
+                    AlarmAdapter.UpcomingState(AlarmAdapter.Upcoming.SNOOZED, snoozed)
+                alarm.days.isNotEmpty() && store.skipUntil(alarm.id) > now ->
+                    AlarmAdapter.UpcomingState(AlarmAdapter.Upcoming.SKIPPED)
+                alarm.nextTrigger(now) - now <= UpcomingAlarm.CARD_WINDOW_MS ->
+                    AlarmAdapter.UpcomingState(AlarmAdapter.Upcoming.SOON)
+                else -> null
             }
+            if (state != null) states[alarm.id] = state
+        }
+        return states
+    }
+
+    /** Turning off a repeating or snoozed alarm: only the next ring, or all of them? */
+    private fun turnOff(alarm: Alarm) {
+        val now = System.currentTimeMillis()
+        val snoozed = store.snoozeUntil(alarm.id) > now
+        val alreadySkipped = !snoozed && store.skipUntil(alarm.id) > now
+        if (alarm.days.isEmpty() || alreadySkipped) {
+            UpcomingAlarm.turnOff(this, alarm, store)
+            refreshAlarms()
+            return
+        }
+        val nextOnly = getString(
+            if (snoozed) R.string.turn_off_snoozed_only else R.string.turn_off_next_only
+        )
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.turn_off_title)
+            .setItems(arrayOf(nextOnly, getString(R.string.turn_off_all))) { _, which ->
+                if (which == 0) {
+                    UpcomingAlarm.dismissNext(this, alarm, store)
+                    toastNextRing(alarm)
+                } else {
+                    UpcomingAlarm.turnOff(this, alarm, store)
+                }
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            // Also puts the switch back on when the dialog is cancelled.
+            .setOnDismissListener { refreshAlarms() }
+            .show()
+    }
+
+    private fun updateNextAlarmBanner(alarms: List<Alarm> = store.all()) {
+        val now = System.currentTimeMillis()
+        // The ticker gets here every second: let cards enter or leave the "rings soon"
+        // window (and lose an elapsed snooze) without waiting for the next resume.
+        if (upcomingStates(alarms) != adapter.upcoming) {
+            refreshAlarms()
+            return
+        }
+        val next = alarms
+            .filter { it.enabled }
+            .minOfOrNull { store.nextRing(it, now) }
         binding.nextAlarmBanner.text = if (next == null) {
             getString(R.string.all_alarms_off)
         } else {
@@ -157,8 +225,8 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun toastNextRing(alarm: fr.arichard.upupup.core.Alarm) {
-        val delay = alarm.nextTrigger() - System.currentTimeMillis()
+    private fun toastNextRing(alarm: Alarm) {
+        val delay = store.nextRing(alarm) - System.currentTimeMillis()
         android.widget.Toast.makeText(
             this, getString(R.string.alarm_set_in, Format.delay(this, delay)),
             android.widget.Toast.LENGTH_SHORT
