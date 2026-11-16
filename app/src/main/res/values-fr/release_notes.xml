@@ -1,5 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string-array name="release_notes_1_15">
+        <item>🔕 Annulez une sonnerie à venir depuis sa notification ou sa carte</item>
+        <item>🔁 Décocher une alarme répétée : la prochaine sonnerie ou toutes ?</item>
+        <item>🐛 L’écran d’alarme et sa notification restent toujours accessibles</item>
+    </string-array>
+
     <string-array name="release_notes_1_14">
         <item>📳 La vibration de l’alarme se coupe aussi pendant la mission</item>
     </string-array>
