@@ -72,6 +72,15 @@ class SettingsActivity : AppCompatActivity() {
         binding.autoUpdateSwitch.setOnCheckedChangeListener { _, checked ->
             prefs.autoUpdate = checked
         }
+        binding.betaUpdatesSwitch.isChecked = prefs.betaUpdates
+        binding.betaUpdatesSwitch.setOnCheckedChangeListener { _, checked ->
+            prefs.betaUpdates = checked
+            // Whatever was found or downloaded belongs to the other channel.
+            readyVersion = null
+            binding.installButton.visibility = android.view.View.GONE
+            binding.updateStatus.text = ""
+            Thread { UpdateManager.onChannelChanged(applicationContext) }.start()
+        }
         binding.releaseNotesSwitch.isChecked = prefs.showReleaseNotes
         binding.releaseNotesSwitch.setOnCheckedChangeListener { _, checked ->
             prefs.showReleaseNotes = checked

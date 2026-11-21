@@ -15,6 +15,11 @@ class Prefs(context: Context) {
         get() = prefs.getBoolean("auto_update", true)
         set(value) = prefs.edit().putBoolean("auto_update", value).apply()
 
+    /** Opt-in to every release, pre-releases included, instead of stable ones only. */
+    var betaUpdates: Boolean
+        get() = prefs.getBoolean("beta_updates", false)
+        set(value) = prefs.edit().putBoolean("beta_updates", value).apply()
+
     /** Minutes before an alarm rings to post a heads-up notification; 0 = off. */
     var preAlarmMinutes: Int
         get() = prefs.getInt("pre_alarm_minutes", 10)

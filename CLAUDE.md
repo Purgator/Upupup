@@ -18,6 +18,11 @@ every user-facing string exists in EN (`values/strings.xml`) and FR (`values-fr/
 3. **Auto-update contract.** `UpdateManager` polls
    `api.github.com/repos/Purgator/Upupup/releases/latest` and matches the asset named
    exactly **`Upupup.apk`** on a tag named **`vX.Y`**. Release process must keep both.
+   Two channels: by default the app only sees the release GitHub marks **latest** (never
+   a pre-release); with the "Early versions" opt-in (`Prefs.betaUpdates`, off by default)
+   it reads the release list and takes the highest version, pre-releases included.
+   **Every new release is published as a pre-release**; only the owner decides to promote
+   one to stable.
 4. Manual update checks download on ANY network; the Wi-Fi-only rule is for the
    automatic daily check only.
 
@@ -44,7 +49,12 @@ every user-facing string exists in EN (`values/strings.xml`) and FR (`values-fr/
 1. Add concise, emoji-prefixed `release_notes_X_Y` arrays to `values/release_notes.xml` and `values-fr/release_notes.xml`, then register the version in `core/ReleaseNotes.kt`. `ReleaseNotesTest` enforces the registry, translations, and emoji prefix.
 2. Bump `versionCode` (+1) and `versionName` in `app/build.gradle.kts`; commit `🔖 Version X.Y`.
 3. `./gradlew assembleRelease`, push `master:main` (local branch is `master`, remote default is `main`).
-4. `gh release create vX.Y <apk renamed to Upupup.apk> --repo Purgator/Upupup --target main --title "Upupup X.Y" --notes "…"`, using the English release-note items as the release body.
+4. `gh release create vX.Y <apk renamed to Upupup.apk> --repo Purgator/Upupup --target main --title "Upupup X.Y" --notes "…" --prerelease`, using the English release-note items as the release body. Always `--prerelease`: it only reaches opted-in users.
+
+**Promote to stable** (only when the owner says a version is ready for everyone):
+`gh release edit vX.Y --repo Purgator/Upupup --prerelease=false --latest`. Nothing to
+rebuild; stable users get it at their next daily check. To pull a bad stable release back,
+`gh release edit vX.Y --repo Purgator/Upupup --prerelease` (GitHub's "latest" falls back to the previous stable).
 
 ## Conventions
 
@@ -71,7 +81,7 @@ every user-facing string exists in EN (`values/strings.xml`) and FR (`values-fr/
 | `core/TimerStore.kt` / `StopwatchStore.kt` | Countdown & stopwatch persistence (stopwatch uses `elapsedRealtime`) |
 | `core/Prefs.kt` | App settings (swipe snooze, default output, pre-alarm lead, time-picker mode, release notes…) |
 | `core/RoutineRunner.kt` | After-stop routine: open app / TTS phrase / assistant query |
-| `core/UpdateManager.kt` + `ApkInstaller.kt` | GitHub-release self-update (PackageInstaller session, unknown-sources handling) |
+| `core/UpdateManager.kt` + `ApkInstaller.kt` | GitHub-release self-update, stable or early-versions channel (PackageInstaller session, unknown-sources handling) |
 | `core/ReleaseNotes.kt` | Bundled per-version release notes and selection after updates |
 | `mission/ShakeDetector.kt`, `StepDetector.kt`, `MathMission.kt`, `MemoryMission.kt` | Mission engines |
 | `core/SwitchState.kt` | The alarm switch's three positions (off / skip next ring / on) and its tap cycle |
@@ -80,7 +90,7 @@ every user-facing string exists in EN (`values/strings.xml`) and FR (`values-fr/
 | `LongPressMenu.kt` | `View.setLongPressMenu { actions }`: the popup behind every long-press shortcut |
 | `AlarmEditActivity.kt` | Editor: wheel-or-clock time picker, day toggles, mission bottom sheet (illustrated cards + chips + "Try it" preview), snooze/output/routine dialogs, unsaved-changes diff dialog |
 | `RingActivity.kt` | Lock-screen ring UI: slide-to-stop (no mission) or big start-mission button; swipe-up-to-snooze (animated helper) or button; the five missions; shake fills screen bottom→top + haptic blip; preview mode via `EXTRA_PREVIEW_*` |
-| `SettingsActivity.kt` | Output default, time-picker style, pre-alarm lead, swipe snooze, auto-update, release-notes preference + manual check/install |
+| `SettingsActivity.kt` | Output default, time-picker style, pre-alarm lead, swipe snooze, auto-update, early-versions opt-in, release-notes preference + manual check/install |
 
 ## UX decisions already settled (don't relitigate)
 

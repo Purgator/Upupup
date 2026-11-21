@@ -9,6 +9,7 @@ import android.net.ConnectivityManager
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import fr.arichard.upupup.R
+import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
 import java.net.HttpURLConnection
@@ -16,6 +17,9 @@ import java.net.URL
 
 /**
  * Self-updater backed by GitHub Releases.
+ *
+ * Two channels: by default only releases promoted to stable are offered; with the beta
+ * opt-in ([Prefs.betaUpdates]) every release is, including GitHub pre-releases.
  *
  * Once a day (throttled, triggered on app open) it fetches the latest-release metadata;
  * when a newer version exists it downloads the APK in the background (unmetered networks
@@ -26,7 +30,13 @@ import java.net.URL
 object UpdateManager {
 
     private const val TAG = "UpdateManager"
-    private const val API_URL = "https://api.github.com/repos/Purgator/Upupup/releases/latest"
+    private const val RELEASES_URL = "https://api.github.com/repos/Purgator/Upupup/releases"
+
+    /** Stable channel: GitHub's "latest" never points at a pre-release or a draft. */
+    private const val STABLE_URL = "$RELEASES_URL/latest"
+
+    /** Beta channel: every recent release, pre-releases included. */
+    private const val BETA_URL = "$RELEASES_URL?per_page=20"
     private const val ASSET_NAME = "Upupup.apk"
     private const val MAX_APK_BYTES = 50L * 1024 * 1024
     private const val CHECK_INTERVAL_MS = 24L * 60 * 60 * 1000
@@ -98,11 +108,12 @@ object UpdateManager {
     ): Result {
         val appContext = context.applicationContext
         return try {
-            val json = JSONObject(httpGet(API_URL))
-
-            val remote = json.getString("tag_name").removePrefix("v").trim()
             val current = currentVersion(appContext)
             cleanupOldApks(appContext, current)
+            val json = fetchRelease(Prefs(appContext).betaUpdates)
+                ?: return Result(Status.UP_TO_DATE, current)
+
+            val remote = json.getString("tag_name").removePrefix("v").trim()
             if (!isNewer(remote, current)) return Result(Status.UP_TO_DATE, current)
 
             var assetUrl: String? = null
@@ -135,6 +146,34 @@ object UpdateManager {
             Log.w(TAG, "Update check failed: ${e.message}")
             Result(Status.ERROR, detail = e.message ?: e.javaClass.simpleName)
         }
+    }
+
+    private fun fetchRelease(beta: Boolean): JSONObject? =
+        if (beta) newestRelease(JSONArray(httpGet(BETA_URL))) else JSONObject(httpGet(STABLE_URL))
+
+    /** Highest-versioned published release of a GitHub release list, pre-releases included. */
+    internal fun newestRelease(releases: JSONArray): JSONObject? =
+        (0 until releases.length())
+            .map { releases.getJSONObject(it) }
+            .filter { !it.optBoolean("draft") && it.optString("tag_name").isNotEmpty() }
+            .maxWithOrNull { a, b ->
+                compareVersions(a.getString("tag_name"), b.getString("tag_name"))
+            }
+
+    /**
+     * Forgets everything learnt from the previous channel: a beta APK already downloaded
+     * must not be offered once the user is back on stable, and the next app open should
+     * check the new channel right away. Call from a background thread.
+     */
+    @Synchronized
+    fun onChannelChanged(context: Context) {
+        val appContext = context.applicationContext
+        File(appContext.cacheDir, "updates").listFiles()?.forEach { it.delete() }
+        (appContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager)
+            .cancel(NOTIFICATION_ID)
+        val prefs = Prefs(appContext)
+        prefs.updateDeferred = false
+        prefs.lastUpdateCheck = 0
     }
 
     /** Starts installing the downloaded update APK for [version]. */

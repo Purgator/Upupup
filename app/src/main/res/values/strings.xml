@@ -194,6 +194,8 @@
     <string name="mission_quiet_setting_summary">Sound and vibration pause while you work and come back if you stop — sooner each time</string>
     <string name="auto_update">Automatic updates</string>
     <string name="auto_update_summary">Checks GitHub once a day and downloads new versions on Wi-Fi</string>
+    <string name="beta_updates">Early versions</string>
+    <string name="beta_updates_summary">Get every new version as soon as it is built, before it is confirmed stable. Expect the occasional bug.</string>
     <string name="check_updates_now">Check for updates now</string>
     <string name="checking">Checking…</string>
     <string name="downloading">Downloading…</string>
