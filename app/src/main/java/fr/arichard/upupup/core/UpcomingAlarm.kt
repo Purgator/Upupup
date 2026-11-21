@@ -22,21 +22,27 @@ object UpcomingAlarm {
     const val CARD_WINDOW_MS = 2L * 60 * 60 * 1000
 
     /**
-     * Cancels only the next ring. A pending snooze is dropped; otherwise a repeating
-     * alarm skips its next occurrence and stays enabled. A one-shot alarm has nothing
-     * left to ring, so it is turned off.
+     * Cancels only the next ring and returns its time. A repeating alarm stays enabled:
+     * its pending snooze is dropped, or else its next occurrence is skipped, and the
+     * cancelled time is remembered so the card can show it until it has passed. A
+     * one-shot alarm has nothing left to ring, so it is turned off (returns 0).
      */
-    fun dismissNext(context: Context, alarm: Alarm, store: AlarmStore = AlarmStore(context)) {
+    fun dismissNext(
+        context: Context, alarm: Alarm, store: AlarmStore = AlarmStore(context),
+    ): Long {
         if (alarm.days.isEmpty()) {
             turnOff(context, alarm, store)
-            return
+            return 0
         }
         val now = System.currentTimeMillis()
-        val snoozed = store.snoozeUntil(alarm.id) > now
+        // Snoozed: nextRing() is the snooze time, and skipping "until" it leaves every
+        // regular occurrence untouched.
+        val cancelled = store.nextRing(alarm, now)
         store.clearSnooze(alarm.id)
-        if (!snoozed) store.setSkipUntil(alarm.id, store.nextRing(alarm, now))
+        store.setSkipUntil(alarm.id, cancelled)
         AlarmScheduler.schedule(context, alarm, store)
         cancelNotification(context, alarm.id)
+        return cancelled
     }
 
     /** Disables the alarm entirely: pending snooze and every future occurrence. */

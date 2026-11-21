@@ -30,14 +30,17 @@ object TimerController {
     }
 
     /** Adds a minute to a running or paused timer. */
-    fun plusOneMinute(context: Context) {
+    fun plusOneMinute(context: Context) = plusMinutes(context, 1)
+
+    /** Adds [minutes] to a running or paused timer. */
+    fun plusMinutes(context: Context, minutes: Int) {
         val store = TimerStore(context)
         when {
             store.isRunning -> {
-                store.endTime += 60_000
+                store.endTime += minutes * 60_000L
                 AlarmScheduler.scheduleAll(context)
             }
-            store.isPaused -> store.pausedRemaining += 60_000
+            store.isPaused -> store.pausedRemaining += minutes * 60_000L
         }
     }
 

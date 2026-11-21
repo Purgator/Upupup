@@ -74,13 +74,22 @@ every user-facing string exists in EN (`values/strings.xml`) and FR (`values-fr/
 | `core/UpdateManager.kt` + `ApkInstaller.kt` | GitHub-release self-update (PackageInstaller session, unknown-sources handling) |
 | `core/ReleaseNotes.kt` | Bundled per-version release notes and selection after updates |
 | `mission/ShakeDetector.kt`, `StepDetector.kt`, `MathMission.kt`, `MemoryMission.kt` | Mission engines |
-| `MainActivity.kt` | Bottom nav: Alarms (list + fixed 40dp next-ring banner) / Timer (preset +time buttons) / Stopwatch; permission onboarding; 1s ticker |
+| `core/SwitchState.kt` | The alarm switch's three positions (off / skip next ring / on) and its tap cycle |
+| `MainActivity.kt` | Bottom nav: Alarms (list + fixed 40dp next-ring banner) / Timer (preset +time buttons) / Stopwatch; switch tap cycle + snackbar undo; long-press menus; permission onboarding; 1s ticker |
+| `TriStateSwitch.kt` | Custom-drawn three-position switch on alarm cards (display only; the owner decides the next state) |
+| `LongPressMenu.kt` | `View.setLongPressMenu { actions }`: the popup behind every long-press shortcut |
 | `AlarmEditActivity.kt` | Editor: wheel-or-clock time picker, day toggles, mission bottom sheet (illustrated cards + chips + "Try it" preview), snooze/output/routine dialogs, unsaved-changes diff dialog |
 | `RingActivity.kt` | Lock-screen ring UI: slide-to-stop (no mission) or big start-mission button; swipe-up-to-snooze (animated helper) or button; the five missions; shake fills screen bottom→top + haptic blip; preview mode via `EXTRA_PREVIEW_*` |
 | `SettingsActivity.kt` | Output default, time-picker style, pre-alarm lead, swipe snooze, auto-update, release-notes preference + manual check/install |
 
 ## UX decisions already settled (don't relitigate)
 
+- Alarm switch is three-state, no dialog: tap = on → next ring skipped (thumb half-way,
+  card says which ring) → off → on; the half state returns to on by itself once the
+  skipped time has passed. One-shot alarms go straight on ↔ off.
+- Long-press gives shortcuts nearly everywhere (cards, banner, +, tabs, timer,
+  stopwatch, editor rows, settings rows) — never on the ring screen, where it could
+  only help cheating.
 - Mission alarms: big **Start mission** button; completing the mission stops the alarm.
   Slide-to-stop only for mission-less alarms. Snooze = swipe-up by default (setting for
   a button instead).
@@ -97,7 +106,7 @@ every user-facing string exists in EN (`values/strings.xml`) and FR (`values-fr/
 
 - `RingActivity` is `singleInstance`; previews convert to a real ring via `onNewIntent`.
 - Notification ids: 1 ring, 2 update, 3 timer, 4 stopwatch, 100+ pre-alarm / snoozed heads-ups.
-- A skipped occurrence is `skip_until_<id>` in `AlarmStore`; always compute the real next ring with `AlarmStore.nextRing()`, not `Alarm.nextTrigger()`.
+- A skipped occurrence is `skip_until_<id>` in `AlarmStore` (for a cancelled snooze it holds the snooze time, so no regular occurrence is lost); always compute the real next ring with `AlarmStore.nextRing()`, not `Alarm.nextTrigger()`.
 - The ringing notification reposts itself from its delete intent (Android 14+ lets users swipe ongoing notifications).
 - `AlarmService.stopRinging()` restores the user's alarm-stream volume — keep symmetric.
 - Wheel time picker: values typed but not committed are flushed in

@@ -1,6 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Add one localized array per release and register it in core/ReleaseNotes.kt. -->
+    <string-array name="release_notes_1_16">
+        <item>🎚️ Three-position alarm switch: on, skip the next ring, off</item>
+        <item>⏭️ After a skipped ring, the switch turns back on by itself</item>
+        <item>👆 Long-press almost anything for shortcuts: cards, +, tabs, timer…</item>
+    </string-array>
+
     <string-array name="release_notes_1_15">
         <item>🔕 Skip an upcoming or snoozed ring from its notification or its card</item>
         <item>🔁 Turning off a repeating alarm asks: next ring only, or all</item>

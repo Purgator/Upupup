@@ -11,6 +11,7 @@ object ReleaseNotes {
 
     // Add each release here, newest first, and keep its EN/FR resource arrays in sync.
     private val entries = listOf(
+        "1.16" to R.array.release_notes_1_16,
         "1.15" to R.array.release_notes_1_15,
         "1.14" to R.array.release_notes_1_14,
         "1.13" to R.array.release_notes_1_13,
@@ -54,6 +55,11 @@ object ReleaseNotes {
                 version to context.resources.getStringArray(resourceId).toList()
             }
         }
+    }
+
+    /** Every bundled release, newest first: the full "what's new" history. */
+    fun all(context: Context): List<Pair<String, List<String>>> = entries.map { (version, id) ->
+        version to context.resources.getStringArray(id).toList()
     }
 
     /** Records the installed version after its notes have been dismissed or skipped. */

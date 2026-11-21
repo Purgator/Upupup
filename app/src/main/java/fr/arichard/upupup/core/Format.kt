@@ -43,6 +43,16 @@ object Format {
     fun time(context: Context, epochMillis: Long): String =
         DateFormat.getTimeFormat(context).format(Date(epochMillis))
 
+    /** Short weekday + clock time of a ring, e.g. "Mon 07:30". */
+    fun dayTime(context: Context, epochMillis: Long): String =
+        java.text.SimpleDateFormat("EEE", java.util.Locale.getDefault())
+            .format(Date(epochMillis)) + " " + time(context, epochMillis)
+
+    /** Countdown-style "hh:mm:ss" for a duration in seconds. */
+    fun hms(seconds: Long): String = String.format(
+        java.util.Locale.ROOT, "%02d:%02d:%02d", seconds / 3600, seconds % 3600 / 60, seconds % 60
+    )
+
     /** Human name of a concrete sound output (not [Output.DEFAULT]). */
     fun output(context: Context, output: Output): String = when (output) {
         Output.SPEAKER -> context.getString(R.string.output_speaker)

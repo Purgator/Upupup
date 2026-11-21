@@ -21,22 +21,27 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.SimpleItemAnimator
 import com.google.android.material.checkbox.MaterialCheckBox
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.snackbar.Snackbar
 import fr.arichard.upupup.core.Alarm
 import fr.arichard.upupup.core.AlarmScheduler
 import fr.arichard.upupup.core.AlarmStore
 import fr.arichard.upupup.core.Format
+import fr.arichard.upupup.core.Mission
 import fr.arichard.upupup.core.Output
 import fr.arichard.upupup.core.Prefs
 import fr.arichard.upupup.core.ReleaseNotes
 import fr.arichard.upupup.core.StopwatchStore
+import fr.arichard.upupup.core.SwitchState
 import fr.arichard.upupup.core.TickingNotifications
 import fr.arichard.upupup.core.TimerController
 import fr.arichard.upupup.core.TimerStore
 import fr.arichard.upupup.core.UpcomingAlarm
 import fr.arichard.upupup.core.UpdateManager
 import fr.arichard.upupup.databinding.ActivityMainBinding
+import java.util.Calendar
 
 class MainActivity : AppCompatActivity() {
 
@@ -48,6 +53,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var lapAdapter: LapAdapter
     private val handler = Handler(Looper.getMainLooper())
     private var selectedTab = R.id.nav_alarms
+
+    /** The message currently on screen; replaced, never stacked. */
+    private var snackbar: Snackbar? = null
 
     private val ticker = object : Runnable {
         override fun run() {
@@ -70,42 +78,31 @@ class MainActivity : AppCompatActivity() {
         stopwatchStore = StopwatchStore(this)
 
         adapter = AlarmAdapter(
-            onClick = { alarm ->
-                startActivity(
-                    Intent(this, AlarmEditActivity::class.java)
-                        .putExtra(AlarmEditActivity.EXTRA_ID, alarm.id)
-                )
-            },
-            onToggle = { alarm, enabled ->
-                if (enabled) {
-                    val updated = alarm.copy(enabled = true)
-                    store.save(updated)
-                    store.clearSnooze(alarm.id)
-                    store.clearSkip(alarm.id)
-                    AlarmScheduler.schedule(this, updated, store)
-                    refreshAlarms()
-                    toastNextRing(updated)
-                } else {
-                    turnOff(alarm)
-                }
-            },
-            onLongClick = { alarm -> confirmDelete(alarm.id) },
+            onClick = ::editAlarm,
+            onSwitch = ::cycleSwitch,
+            menu = ::alarmMenu,
             onUpcomingAction = { alarm, kind ->
-                if (kind == AlarmAdapter.Upcoming.SKIPPED) {
-                    UpcomingAlarm.restore(this, alarm, store)
-                } else {
-                    UpcomingAlarm.dismissNext(this, alarm, store)
-                }
-                refreshAlarms()
-                if (alarm.days.isNotEmpty()) toastNextRing(alarm)
+                if (kind == AlarmAdapter.Upcoming.SKIPPED) restoreRing(alarm)
+                else skipNextRing(alarm)
             },
         )
         binding.alarmList.layoutManager = LinearLayoutManager(this)
         binding.alarmList.adapter = adapter
+        // Cards are rebound in place: the switch slides by itself, no cross-fade.
+        (binding.alarmList.itemAnimator as? SimpleItemAnimator)?.supportsChangeAnimations = false
 
         binding.fabAdd.setOnClickListener {
             startActivity(Intent(this, AlarmEditActivity::class.java))
         }
+        // Long press: a one-shot alarm a few minutes or hours from now.
+        binding.fabAdd.setLongPressMenu {
+            QUICK_ALARM_MINUTES.map { minutes ->
+                MenuAction(getString(R.string.menu_ring_in, durationLabel(minutes))) {
+                    quickAlarm(minutes)
+                }
+            }
+        }
+        binding.nextAlarmBanner.setLongPressMenu { bannerMenu() }
 
         binding.bottomNav.setOnItemSelectedListener { item ->
             showTab(item.itemId)
@@ -114,6 +111,7 @@ class MainActivity : AppCompatActivity() {
 
         setupTimerTab()
         setupStopwatchTab()
+        setupNavShortcuts()
         showReleaseNotesIfUpdated()
         requestNeededPermissions()
 
@@ -163,11 +161,12 @@ class MainActivity : AppCompatActivity() {
         val states = mutableMapOf<Long, AlarmAdapter.UpcomingState>()
         alarms.filter { it.enabled }.forEach { alarm ->
             val snoozed = store.snoozeUntil(alarm.id)
+            val skipped = store.skipUntil(alarm.id)
             val state = when {
                 snoozed > now ->
                     AlarmAdapter.UpcomingState(AlarmAdapter.Upcoming.SNOOZED, snoozed)
-                alarm.days.isNotEmpty() && store.skipUntil(alarm.id) > now ->
-                    AlarmAdapter.UpcomingState(AlarmAdapter.Upcoming.SKIPPED)
+                alarm.days.isNotEmpty() && skipped > now ->
+                    AlarmAdapter.UpcomingState(AlarmAdapter.Upcoming.SKIPPED, skipped)
                 alarm.nextTrigger(now) - now <= UpcomingAlarm.CARD_WINDOW_MS ->
                     AlarmAdapter.UpcomingState(AlarmAdapter.Upcoming.SOON)
                 else -> null
@@ -177,34 +176,214 @@ class MainActivity : AppCompatActivity() {
         return states
     }
 
-    /** Turning off a repeating or snoozed alarm: only the next ring, or all of them? */
-    private fun turnOff(alarm: Alarm) {
+    private fun editAlarm(alarm: Alarm) {
+        startActivity(
+            Intent(this, AlarmEditActivity::class.java)
+                .putExtra(AlarmEditActivity.EXTRA_ID, alarm.id)
+        )
+    }
+
+    private fun switchState(alarm: Alarm): SwitchState {
         val now = System.currentTimeMillis()
-        val snoozed = store.snoozeUntil(alarm.id) > now
-        val alreadySkipped = !snoozed && store.skipUntil(alarm.id) > now
-        if (alarm.days.isEmpty() || alreadySkipped) {
-            UpcomingAlarm.turnOff(this, alarm, store)
-            refreshAlarms()
+        // A pending snooze rings before anything that could have been skipped.
+        val skipUntil = if (store.snoozeUntil(alarm.id) > now) 0 else store.skipUntil(alarm.id)
+        return SwitchState.of(alarm, now, skipUntil)
+    }
+
+    /** One tap on a switch: on → next ring skipped → off → on. */
+    private fun cycleSwitch(alarm: Alarm) {
+        when (switchState(alarm).afterTap(canSkip = alarm.days.isNotEmpty())) {
+            SwitchState.SKIP -> skipNextRing(alarm)
+            SwitchState.OFF -> turnOff(alarm)
+            SwitchState.ON -> turnOn(alarm)
+        }
+    }
+
+    /** Enables [alarm] with a clean slate (no snooze, no skipped ring); no UI. */
+    private fun enable(alarm: Alarm): Alarm {
+        val updated = alarm.copy(enabled = true)
+        store.save(updated)
+        store.clearSnooze(alarm.id)
+        store.clearSkip(alarm.id)
+        AlarmScheduler.schedule(this, updated, store)
+        return updated
+    }
+
+    private fun turnOn(alarm: Alarm) {
+        val updated = enable(alarm)
+        refreshAlarms()
+        noticeNextRing(updated)
+    }
+
+    private fun turnOff(alarm: Alarm) {
+        UpcomingAlarm.turnOff(this, alarm, store)
+        refreshAlarms()
+        notice(getString(R.string.alarm_off_notice))
+    }
+
+    /**
+     * Cancels only the next ring (the half-way switch position) and says which one, with
+     * an Undo that puts everything back, a dropped snooze included.
+     */
+    private fun skipNextRing(alarm: Alarm) {
+        val snoozeUntil = store.snoozeUntil(alarm.id)
+        val snoozeCount = store.snoozeCount(alarm.id)
+        val previousSkip = store.skipUntil(alarm.id)
+        val cancelled = UpcomingAlarm.dismissNext(this, alarm, store)
+        refreshAlarms()
+        if (cancelled == 0L) { // one-shot: nothing left to ring, it is simply off
+            notice(getString(R.string.alarm_off_notice))
             return
         }
-        val nextOnly = getString(
-            if (snoozed) R.string.turn_off_snoozed_only else R.string.turn_off_next_only
+        val text = getString(
+            R.string.skip_notice,
+            Format.dayTime(this, cancelled),
+            Format.dayTime(this, store.nextRing(alarm)),
         )
-        MaterialAlertDialogBuilder(this)
-            .setTitle(R.string.turn_off_title)
-            .setItems(arrayOf(nextOnly, getString(R.string.turn_off_all))) { _, which ->
-                if (which == 0) {
-                    UpcomingAlarm.dismissNext(this, alarm, store)
-                    toastNextRing(alarm)
-                } else {
-                    UpcomingAlarm.turnOff(this, alarm, store)
+        notice(text) {
+            val current = store.get(alarm.id)
+            if (current != null && current.enabled) {
+                val now = System.currentTimeMillis()
+                if (snoozeUntil > now) store.restoreSnooze(alarm.id, snoozeUntil, snoozeCount)
+                if (previousSkip > now) store.setSkipUntil(alarm.id, previousSkip)
+                else store.clearSkip(alarm.id)
+                AlarmScheduler.schedule(this, current, store)
+                refreshAlarms()
+            }
+        }
+    }
+
+    private fun restoreRing(alarm: Alarm) {
+        UpcomingAlarm.restore(this, alarm, store)
+        refreshAlarms()
+        noticeNextRing(alarm)
+    }
+
+    /** Long press on a card or its switch. */
+    private fun alarmMenu(alarm: Alarm): List<MenuAction> {
+        val actions = mutableListOf<MenuAction>()
+        val now = System.currentTimeMillis()
+        when (switchState(alarm)) {
+            SwitchState.SKIP -> actions += MenuAction(
+                getString(R.string.menu_restore_ring, Format.dayTime(this, store.skipUntil(alarm.id)))
+            ) { restoreRing(alarm) }
+            SwitchState.ON -> if (alarm.days.isNotEmpty()) {
+                actions += MenuAction(
+                    getString(
+                        R.string.menu_skip_ring, Format.dayTime(this, store.nextRing(alarm, now))
+                    )
+                ) { skipNextRing(alarm) }
+            }
+            SwitchState.OFF -> Unit
+        }
+        actions += if (alarm.enabled) {
+            MenuAction(getString(R.string.menu_turn_off)) { turnOff(alarm) }
+        } else {
+            MenuAction(getString(R.string.menu_turn_on)) { turnOn(alarm) }
+        }
+        if (alarm.mission != Mission.NONE) {
+            actions += MenuAction(getString(R.string.menu_try_mission)) {
+                startActivity(
+                    Intent(this, RingActivity::class.java)
+                        .putExtra(RingActivity.EXTRA_PREVIEW_MISSION, alarm.mission.name)
+                        .putExtra(RingActivity.EXTRA_PREVIEW_LEVEL, alarm.missionLevel)
+                )
+            }
+        }
+        actions += MenuAction(getString(R.string.menu_duplicate)) { duplicate(alarm) }
+        actions += MenuAction(getString(R.string.delete_alarm)) { confirmDelete(alarm.id) }
+        return actions
+    }
+
+    /**
+     * The copy starts off and opens in the editor, where saving turns it on: two
+     * identical alarms never ring at the same minute by accident.
+     */
+    private fun duplicate(alarm: Alarm) {
+        val copy = alarm.copy(id = System.currentTimeMillis(), enabled = false)
+        store.save(copy)
+        editAlarm(copy)
+    }
+
+    /** Long press on the next-ring banner: act on that ring, or on every alarm at once. */
+    private fun bannerMenu(): List<MenuAction> {
+        val alarms = store.all()
+        val now = System.currentTimeMillis()
+        val next = alarms.filter { it.enabled }.minByOrNull { store.nextRing(it, now) }
+        val actions = mutableListOf<MenuAction>()
+        if (next != null) {
+            actions += MenuAction(
+                getString(R.string.menu_skip_ring, Format.dayTime(this, store.nextRing(next, now)))
+            ) { skipNextRing(next) }
+            actions += MenuAction(getString(R.string.edit_alarm)) { editAlarm(next) }
+        }
+        actions += allAlarmsActions(alarms)
+        return actions
+    }
+
+    private fun allAlarmsActions(alarms: List<Alarm>): List<MenuAction> {
+        val actions = mutableListOf<MenuAction>()
+        val on = alarms.filter { it.enabled }
+        val off = alarms.filter { !it.enabled }
+        if (on.isNotEmpty()) {
+            actions += MenuAction(getString(R.string.menu_all_off)) {
+                on.forEach { UpcomingAlarm.turnOff(this, it, store) }
+                refreshAlarms()
+                notice(getString(R.string.all_alarms_off)) {
+                    on.forEach { alarm -> store.get(alarm.id)?.let { enable(it) } }
+                    refreshAlarms()
                 }
             }
-            .setNegativeButton(android.R.string.cancel, null)
-            // Also puts the switch back on when the dialog is cancelled.
-            .setOnDismissListener { refreshAlarms() }
-            .show()
+        }
+        if (off.isNotEmpty()) {
+            actions += MenuAction(getString(R.string.menu_all_on)) {
+                off.forEach { enable(it) }
+                refreshAlarms()
+                notice(getString(R.string.all_alarms_on)) {
+                    off.forEach { alarm ->
+                        store.get(alarm.id)?.let { UpcomingAlarm.turnOff(this, it, store) }
+                    }
+                    refreshAlarms()
+                }
+            }
+        }
+        return actions
     }
+
+    /**
+     * A one-shot alarm [minutes] from now (rounded up to a whole minute), set up like
+     * the last alarm that was saved.
+     */
+    private fun quickAlarm(minutes: Int) {
+        val at = Calendar.getInstance().apply {
+            add(Calendar.MINUTE, minutes)
+            if (get(Calendar.SECOND) > 0 || get(Calendar.MILLISECOND) > 0) {
+                add(Calendar.MINUTE, 1)
+            }
+        }
+        val template = store.defaultAlarm() ?: Alarm(id = 0, hour = 0, minute = 0)
+        val alarm = template.copy(
+            id = System.currentTimeMillis(),
+            hour = at.get(Calendar.HOUR_OF_DAY),
+            minute = at.get(Calendar.MINUTE),
+            days = emptySet(),
+            label = "",
+            enabled = true,
+        )
+        store.save(alarm)
+        AlarmScheduler.schedule(this, alarm, store)
+        refreshAlarms()
+        noticeNextRing(alarm) {
+            store.delete(alarm.id)
+            AlarmScheduler.cancel(this, alarm.id)
+            refreshAlarms()
+        }
+    }
+
+    /** "20 min", "8 h": a whole number of hours reads as hours. */
+    private fun durationLabel(minutes: Int): String =
+        if (minutes % 60 == 0) getString(R.string.hours_short, minutes / 60)
+        else getString(R.string.minutes_short, minutes)
 
     private fun updateNextAlarmBanner(alarms: List<Alarm> = store.all()) {
         val now = System.currentTimeMillis()
@@ -225,12 +404,21 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun toastNextRing(alarm: Alarm) {
+    private fun noticeNextRing(alarm: Alarm, undo: (() -> Unit)? = null) {
         val delay = store.nextRing(alarm) - System.currentTimeMillis()
-        android.widget.Toast.makeText(
-            this, getString(R.string.alarm_set_in, Format.delay(this, delay)),
-            android.widget.Toast.LENGTH_SHORT
-        ).show()
+        notice(getString(R.string.alarm_set_in, Format.delay(this, delay)), undo)
+    }
+
+    /** Brief message above the bottom bar, replacing the previous one; optional Undo. */
+    private fun notice(text: String, undo: (() -> Unit)? = null) {
+        snackbar?.dismiss()
+        snackbar = Snackbar.make(
+            binding.root, text, if (undo != null) Snackbar.LENGTH_LONG else Snackbar.LENGTH_SHORT
+        ).apply {
+            anchorView = if (selectedTab == R.id.nav_alarms) binding.fabAdd else binding.bottomNav
+            if (undo != null) setAction(R.string.undo) { undo() }
+            show()
+        }
     }
 
     private fun confirmDelete(id: Long) {
@@ -280,9 +468,46 @@ class MainActivity : AppCompatActivity() {
                     pendingSeconds = (pendingSeconds + seconds).coerceAtMost(99 * 3600)
                     updateTimerViews()
                 }
+                // Long press: start exactly this duration, or take it back off.
+                setLongPressMenu {
+                    val amount = durationLabel(seconds / 60)
+                    val actions = mutableListOf(
+                        MenuAction(getString(R.string.menu_start_now, amount)) {
+                            pendingSeconds = seconds
+                            startTimer()
+                        }
+                    )
+                    if (pendingSeconds >= seconds) {
+                        actions += MenuAction(getString(R.string.menu_remove, amount)) {
+                            pendingSeconds -= seconds
+                            updateTimerViews()
+                        }
+                    }
+                    actions
+                }
             }
             binding.timerPresets.addView(button)
         }
+        binding.timerCompose.setLongPressMenu {
+            val actions = mutableListOf<MenuAction>()
+            val last = timerStore.lastDuration.coerceIn(0, 99 * 3600)
+            if (last > 0 && last != pendingSeconds) {
+                actions += MenuAction(
+                    getString(R.string.menu_reuse_last, Format.hms(last.toLong()))
+                ) {
+                    pendingSeconds = last
+                    updateTimerViews()
+                }
+            }
+            if (pendingSeconds > 0) {
+                actions += MenuAction(getString(R.string.timer_clear)) {
+                    pendingSeconds = 0
+                    updateTimerViews()
+                }
+            }
+            actions
+        }
+        binding.timerCountdown.setLongPressMenu { timerActions() }
 
         pendingSeconds = timerStore.lastDuration.coerceIn(0, 99 * 3600)
         binding.timerClear.setOnClickListener {
@@ -316,6 +541,42 @@ class MainActivity : AppCompatActivity() {
         )
         binding.timerOutput.addOnButtonCheckedListener { _, checkedId, isChecked ->
             if (isChecked) outputs[checkedId]?.let { timerStore.output = it }
+        }
+    }
+
+    /** What can be done to the timer right now; also behind the Timer tab's long press. */
+    private fun timerActions(): List<MenuAction> {
+        fun plus(minutes: Int) =
+            MenuAction(getString(R.string.preset_minutes, minutes)) {
+                TimerController.plusMinutes(this, minutes)
+                updateTimerViews()
+            }
+        return when {
+            timerStore.isRunning -> listOf(
+                plus(1), plus(5),
+                MenuAction(getString(R.string.stopwatch_pause)) {
+                    TimerController.pause(this)
+                    updateTimerViews()
+                },
+                MenuAction(getString(R.string.timer_cancel)) { cancelTimer() },
+            )
+            timerStore.isPaused -> listOf(
+                MenuAction(getString(R.string.action_resume)) {
+                    TimerController.resume(this)
+                    updateTimerViews()
+                },
+                plus(1), plus(5),
+                MenuAction(getString(R.string.stopwatch_reset)) { cancelTimer() },
+            )
+            else -> {
+                val last = timerStore.lastDuration.coerceIn(0, 99 * 3600)
+                if (last <= 0) emptyList() else listOf(
+                    MenuAction(getString(R.string.menu_start_now, Format.hms(last.toLong()))) {
+                        pendingSeconds = last
+                        startTimer()
+                    }
+                )
+            }
         }
     }
 
@@ -356,17 +617,11 @@ class MainActivity : AppCompatActivity() {
         binding.timerButton.isEnabled = !idle || pendingSeconds > 0
 
         if (idle) {
-            val s = pendingSeconds
-            binding.timerCompose.text = String.format(
-                java.util.Locale.ROOT, "%02d:%02d:%02d", s / 3600, s % 3600 / 60, s % 60
-            )
+            binding.timerCompose.text = Format.hms(pendingSeconds.toLong())
         } else {
             val leftMs = if (running) timerStore.endTime - System.currentTimeMillis()
             else timerStore.pausedRemaining
-            val left = leftMs.coerceAtLeast(0) / 1000
-            binding.timerCountdown.text = String.format(
-                java.util.Locale.ROOT, "%02d:%02d:%02d", left / 3600, left % 3600 / 60, left % 60
-            )
+            binding.timerCountdown.text = Format.hms(leftMs.coerceAtLeast(0) / 1000)
             if (running) {
                 binding.timerEndAt.text = getString(
                     R.string.timer_notification_text, Format.time(this, timerStore.endTime)
@@ -382,12 +637,7 @@ class MainActivity : AppCompatActivity() {
         binding.lapList.layoutManager = LinearLayoutManager(this)
         binding.lapList.adapter = lapAdapter
 
-        binding.stopwatchToggle.setOnClickListener {
-            if (stopwatchStore.running) stopwatchStore.pause() else stopwatchStore.start()
-            handler.removeCallbacks(ticker)
-            handler.post(ticker)
-            updateStopwatch()
-        }
+        binding.stopwatchToggle.setOnClickListener { toggleStopwatch() }
         binding.stopwatchLap.setOnClickListener {
             if (stopwatchStore.running) {
                 stopwatchStore.addLap()
@@ -395,10 +645,58 @@ class MainActivity : AppCompatActivity() {
             }
         }
         // Reset works even mid-run: one tap does pause + reset.
-        binding.stopwatchReset.setOnClickListener {
-            stopwatchStore.reset()
-            lapAdapter.submit(emptyList())
-            updateStopwatch()
+        binding.stopwatchReset.setOnClickListener { resetStopwatch() }
+        binding.stopwatchDisplay.setLongPressMenu {
+            val actions = mutableListOf(
+                MenuAction(getString(R.string.menu_copy_time)) {
+                    copyToClipboard(Format.stopwatch(stopwatchStore.elapsed()))
+                }
+            )
+            if (stopwatchStore.laps().isNotEmpty()) {
+                actions += MenuAction(getString(R.string.menu_copy_laps)) {
+                    copyToClipboard(LapAdapter.lapsText(this, stopwatchStore.laps()))
+                }
+            }
+            actions
+        }
+    }
+
+    private fun toggleStopwatch() {
+        if (stopwatchStore.running) stopwatchStore.pause() else stopwatchStore.start()
+        handler.removeCallbacks(ticker)
+        handler.post(ticker)
+        updateStopwatch()
+    }
+
+    private fun resetStopwatch() {
+        stopwatchStore.reset()
+        lapAdapter.submit(emptyList())
+        updateStopwatch()
+    }
+
+    /** Long press on a bottom tab: its most likely action, without opening the tab. */
+    private fun setupNavShortcuts() {
+        binding.bottomNav.findViewById<View>(R.id.nav_alarms)?.setLongPressMenu {
+            listOf(
+                MenuAction(getString(R.string.new_alarm)) {
+                    startActivity(Intent(this, AlarmEditActivity::class.java))
+                }
+            ) + allAlarmsActions(store.all())
+        }
+        binding.bottomNav.findViewById<View>(R.id.nav_timer)?.setLongPressMenu { timerActions() }
+        binding.bottomNav.findViewById<View>(R.id.nav_stopwatch)?.setLongPressMenu {
+            val actions = mutableListOf(
+                MenuAction(
+                    getString(
+                        if (stopwatchStore.running) R.string.stopwatch_pause
+                        else R.string.timer_start
+                    )
+                ) { toggleStopwatch() }
+            )
+            if (stopwatchStore.running || stopwatchStore.elapsed() > 0) {
+                actions += MenuAction(getString(R.string.stopwatch_reset)) { resetStopwatch() }
+            }
+            actions
         }
     }
 
@@ -543,5 +841,10 @@ class MainActivity : AppCompatActivity() {
             true
         }
         else -> super.onOptionsItemSelected(item)
+    }
+
+    private companion object {
+        /** Offered when the + button is long-pressed. */
+        val QUICK_ALARM_MINUTES = listOf(10, 20, 30, 60, 8 * 60)
     }
 }

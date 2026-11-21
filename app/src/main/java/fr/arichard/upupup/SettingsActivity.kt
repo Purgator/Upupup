@@ -49,6 +49,14 @@ class SettingsActivity : AppCompatActivity() {
                 .show()
         }
 
+        binding.rowOutput.setLongPressMenu {
+            resetAction(prefs.defaultOutput != fr.arichard.upupup.core.Output.AUTO) {
+                prefs.defaultOutput = fr.arichard.upupup.core.Output.AUTO
+                binding.outputValue.text =
+                    fr.arichard.upupup.core.Format.output(this, prefs.defaultOutput)
+            }
+        }
+
         setupTimePickerRow(prefs)
         setupPreAlarmRow(prefs)
 
@@ -71,6 +79,24 @@ class SettingsActivity : AppCompatActivity() {
 
         binding.versionText.text =
             getString(R.string.version_info, UpdateManager.currentVersion(this))
+        binding.versionText.setLongPressMenu {
+            listOf(
+                MenuAction(getString(R.string.release_notes_title)) { showAllReleaseNotes() },
+                MenuAction(getString(R.string.menu_copy_version)) {
+                    copyToClipboard("Upupup " + UpdateManager.currentVersion(this))
+                },
+                MenuAction(getString(R.string.menu_open_releases)) {
+                    runCatching {
+                        startActivity(
+                            android.content.Intent(
+                                android.content.Intent.ACTION_VIEW,
+                                android.net.Uri.parse(RELEASES_URL)
+                            )
+                        )
+                    }
+                },
+            )
+        }
 
         // A manual check downloads on ANY network — the Wi-Fi-only rule applies to the
         // automatic daily check, not to the user asking explicitly.
@@ -94,6 +120,24 @@ class SettingsActivity : AppCompatActivity() {
         }
     }
 
+    /** The single "back to default" entry of a settings row, when it has been changed. */
+    private fun resetAction(changed: Boolean, reset: () -> Unit): List<MenuAction> =
+        if (changed) listOf(MenuAction(getString(R.string.menu_reset_default), reset))
+        else emptyList()
+
+    /** The whole bundled release history, newest first. */
+    private fun showAllReleaseNotes() {
+        val text = fr.arichard.upupup.core.ReleaseNotes.all(this)
+            .joinToString("\n\n") { (version, items) ->
+                getString(R.string.version_info, version) + "\n" + items.joinToString("\n")
+            }
+        com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.release_notes_title)
+            .setMessage(text)
+            .setPositiveButton(android.R.string.ok, null)
+            .show()
+    }
+
     private fun setupTimePickerRow(prefs: Prefs) {
         val modes = arrayOf(
             fr.arichard.upupup.core.TimePickerMode.WHEEL,
@@ -104,6 +148,13 @@ class SettingsActivity : AppCompatActivity() {
             else R.string.time_picker_clock
         )
         binding.timePickerValue.text = label(prefs.timePickerMode)
+        binding.rowTimePicker.setLongPressMenu {
+            val default = fr.arichard.upupup.core.TimePickerMode.WHEEL
+            resetAction(prefs.timePickerMode != default) {
+                prefs.timePickerMode = default
+                binding.timePickerValue.text = label(default)
+            }
+        }
         binding.rowTimePicker.setOnClickListener {
             com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
                 .setTitle(R.string.time_picker_style)
@@ -125,6 +176,13 @@ class SettingsActivity : AppCompatActivity() {
             if (minutes == 0) getString(R.string.pre_alarm_off)
             else getString(R.string.pre_alarm_before, minutes)
         binding.preAlarmValue.text = label(prefs.preAlarmMinutes)
+        binding.rowPreAlarm.setLongPressMenu {
+            resetAction(prefs.preAlarmMinutes != DEFAULT_PRE_ALARM_MINUTES) {
+                prefs.preAlarmMinutes = DEFAULT_PRE_ALARM_MINUTES
+                binding.preAlarmValue.text = label(DEFAULT_PRE_ALARM_MINUTES)
+                fr.arichard.upupup.core.AlarmScheduler.scheduleAll(this)
+            }
+        }
         binding.rowPreAlarm.setOnClickListener {
             com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
                 .setTitle(R.string.pre_alarm_setting)
@@ -157,5 +215,10 @@ class SettingsActivity : AppCompatActivity() {
             UpdateManager.Status.ERROR ->
                 getString(R.string.update_error, result.detail ?: "?")
         }
+    }
+
+    private companion object {
+        const val RELEASES_URL = "https://github.com/Purgator/Upupup/releases"
+        const val DEFAULT_PRE_ALARM_MINUTES = 10
     }
 }

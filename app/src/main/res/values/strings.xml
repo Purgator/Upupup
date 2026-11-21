@@ -24,11 +24,38 @@
     <string name="delete_alarm">Delete</string>
     <string name="skip_this_ring">Skip this ring</string>
     <string name="restore_ring">Restore</string>
-    <string name="next_ring_skipped">Next ring skipped</string>
-    <string name="turn_off_title">Turn off…</string>
-    <string name="turn_off_next_only">The next ring only</string>
-    <string name="turn_off_snoozed_only">The snoozed ring only</string>
-    <string name="turn_off_all">All rings</string>
+    <string name="skip_status">Skipping %1$s</string>
+    <string name="skip_notice">Skipping %1$s only · next ring %2$s</string>
+    <string name="alarm_off_notice">Alarm off</string>
+    <string name="all_alarms_on">All alarms are on</string>
+    <string name="switch_state_skip">On, next ring skipped</string>
+    <string name="undo">Undo</string>
+    <string name="copied">Copied</string>
+
+    <!-- Long-press menus -->
+    <string name="menu_skip_ring">Skip %1$s</string>
+    <string name="menu_restore_ring">Restore %1$s</string>
+    <string name="menu_turn_on">Turn on</string>
+    <string name="menu_turn_off">Turn off</string>
+    <string name="menu_try_mission">Try the mission</string>
+    <string name="menu_no_mission">No mission</string>
+    <string name="menu_duplicate">Duplicate</string>
+    <string name="menu_all_off">Turn all alarms off</string>
+    <string name="menu_all_on">Turn all alarms on</string>
+    <string name="menu_ring_in">Ring in %1$s</string>
+    <string name="minutes_short">%1$d min</string>
+    <string name="hours_short">%1$d h</string>
+    <string name="menu_start_now">Start %1$s now</string>
+    <string name="menu_remove">Remove %1$s</string>
+    <string name="menu_reuse_last">Last duration (%1$s)</string>
+    <string name="menu_copy_time">Copy time</string>
+    <string name="menu_copy_lap">Copy this lap</string>
+    <string name="menu_copy_laps">Copy all laps</string>
+    <string name="menu_preview_sound">Play 5 seconds</string>
+    <string name="menu_test_routine">Run it now</string>
+    <string name="menu_reset_default">Reset to default</string>
+    <string name="menu_copy_version">Copy version</string>
+    <string name="menu_open_releases">Open the releases page</string>
 
     <!-- Days -->
     <string name="every_day">Every day</string>

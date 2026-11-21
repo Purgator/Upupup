@@ -34,11 +34,32 @@ class LapAdapter : RecyclerView.Adapter<LapAdapter.Holder>() {
         holder.number.text = holder.itemView.context.getString(R.string.lap_number, index + 1)
         holder.split.text = Format.stopwatch(split)
         holder.total.text = Format.stopwatch(cumulative)
+        holder.itemView.setLongPressMenu {
+            val context = holder.itemView.context
+            listOf(
+                MenuAction(context.getString(R.string.menu_copy_lap)) {
+                    context.copyToClipboard(lapsText(context, laps).lines()[index])
+                },
+                MenuAction(context.getString(R.string.menu_copy_laps)) {
+                    context.copyToClipboard(lapsText(context, laps))
+                },
+            )
+        }
     }
 
     class Holder(view: android.view.View) : RecyclerView.ViewHolder(view) {
         val number: TextView = view.findViewById(R.id.lap_number)
         val split: TextView = view.findViewById(R.id.lap_split)
         val total: TextView = view.findViewById(R.id.lap_total)
+    }
+
+    companion object {
+        /** One "Lap n  split  total" line per lap, oldest first: ready to paste. */
+        fun lapsText(context: android.content.Context, laps: List<Long>): String =
+            laps.mapIndexed { index, cumulative ->
+                val split = cumulative - (if (index > 0) laps[index - 1] else 0)
+                context.getString(R.string.lap_number, index + 1) + "  " +
+                    Format.stopwatch(split) + "  " + Format.stopwatch(cumulative)
+            }.joinToString("\n")
     }
 }

@@ -54,9 +54,22 @@ class AlarmEditActivity : AppCompatActivity() {
             }
         }
 
+    /** Sound being auditioned from the Sound row's long-press menu. */
+    private var previewRingtone: android.media.Ringtone? = null
+    private val stopSoundPreview = Runnable {
+        previewRingtone?.stop()
+        previewRingtone = null
+    }
+
     override fun onResume() {
         super.onResume()
         RingActivity.openIfRinging(this)
+    }
+
+    override fun onPause() {
+        binding.root.removeCallbacks(stopSoundPreview)
+        stopSoundPreview.run()
+        super.onPause()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -101,6 +114,7 @@ class AlarmEditActivity : AppCompatActivity() {
         binding.rowSnooze.setOnClickListener { pickSnooze() }
         binding.rowOutput.setOnClickListener { pickOutput() }
         binding.rowRoutine.setOnClickListener { pickRoutine() }
+        setupLongPressMenus()
 
         binding.volumeSlider.progress = draft.volume
         binding.volumeSlider.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
@@ -150,6 +164,148 @@ class AlarmEditActivity : AppCompatActivity() {
             this, getString(R.string.alarm_set_in, Format.delay(this, delay)), Toast.LENGTH_LONG
         ).show()
         finish()
+    }
+
+    // ---- Long-press shortcuts: the usual choices, one press away ----
+
+    private fun setupLongPressMenus() {
+        val timeMenu = {
+            listOf(20, 60, 8 * 60).map { minutes ->
+                val amount = if (minutes % 60 == 0) getString(R.string.hours_short, minutes / 60)
+                else getString(R.string.minutes_short, minutes)
+                MenuAction(getString(R.string.menu_ring_in, amount)) { setTimeIn(minutes) }
+            }
+        }
+        binding.timeDisplay.setLongPressMenu(timeMenu)
+        binding.ringsInPreview.setLongPressMenu(timeMenu)
+
+        binding.rowMission.setLongPressMenu {
+            if (draft.mission != Mission.NONE) {
+                listOf(
+                    MenuAction(getString(R.string.menu_try_mission)) {
+                        previewMission(draft.mission, draft.missionLevel)
+                    },
+                    MenuAction(getString(R.string.menu_no_mission)) {
+                        draft = draft.copy(mission = Mission.NONE, missionLevel = 0)
+                        updateValues()
+                    },
+                )
+            } else {
+                // No mission yet: each one at its usual level, without the full picker.
+                missionChoices.filter { it.mission != Mission.NONE }.map { choice ->
+                    val picked = draft.copy(
+                        mission = choice.mission, missionLevel = defaultLevelFor(choice.mission)
+                    )
+                    MenuAction(missionName(picked)) {
+                        draft = picked
+                        if (picked.mission == Mission.STEPS) requestActivityRecognitionIfNeeded()
+                        updateValues()
+                    }
+                }
+            }
+        }
+
+        binding.rowSound.setLongPressMenu {
+            val actions = mutableListOf(
+                MenuAction(getString(R.string.menu_preview_sound)) { previewSound() }
+            )
+            if (draft.soundUri != null) {
+                actions += MenuAction(getString(R.string.sound_default)) {
+                    draft = draft.copy(soundUri = null)
+                    updateValues()
+                }
+            }
+            actions
+        }
+
+        binding.rowSnooze.setLongPressMenu {
+            listOf(0 to 0, 5 to 0, 10 to 0, 5 to 3)
+                .map { (minutes, max) -> draft.copy(snoozeMinutes = minutes, maxSnoozes = max) }
+                .filter { snoozeName(it) != snoozeName(draft) }
+                .map { choice ->
+                    MenuAction(snoozeName(choice)) {
+                        draft = choice
+                        updateValues()
+                    }
+                }
+        }
+
+        binding.rowOutput.setLongPressMenu {
+            listOf(Output.DEFAULT, Output.SPEAKER, Output.WIRED, Output.BLUETOOTH)
+                .filter { it != draft.output }
+                .map { output ->
+                    MenuAction(outputName(output)) {
+                        draft = draft.copy(output = output)
+                        updateValues()
+                    }
+                }
+        }
+
+        binding.rowRoutine.setLongPressMenu {
+            if (draft.routineType == RoutineType.NONE) emptyList() else listOf(
+                MenuAction(getString(R.string.menu_test_routine)) {
+                    fr.arichard.upupup.core.RoutineRunner.run(
+                        this, draft.routineType, draft.routineValue
+                    )
+                },
+                MenuAction(getString(R.string.routine_none)) {
+                    draft = draft.copy(routineType = RoutineType.NONE, routineValue = null)
+                    updateValues()
+                },
+            )
+        }
+    }
+
+    /** Sets the alarm time to [minutes] from now, rounded up to a whole minute. */
+    private fun setTimeIn(minutes: Int) {
+        val at = Calendar.getInstance().apply {
+            add(Calendar.MINUTE, minutes)
+            if (get(Calendar.SECOND) > 0 || get(Calendar.MILLISECOND) > 0) {
+                add(Calendar.MINUTE, 1)
+            }
+        }
+        draft = draft.copy(
+            hour = at.get(Calendar.HOUR_OF_DAY), minute = at.get(Calendar.MINUTE)
+        )
+        if (binding.timeWheels.visibility == View.VISIBLE) {
+            binding.wheelHours.clearFocus()
+            binding.wheelMinutes.clearFocus()
+            binding.wheelHours.value = draft.hour
+            binding.wheelMinutes.value = draft.minute
+        }
+        updateTimeDisplay()
+        updateRingsInPreview()
+    }
+
+    /** Plays the alarm's sound for a few seconds, at the phone's current alarm volume. */
+    private fun previewSound() {
+        binding.root.removeCallbacks(stopSoundPreview)
+        stopSoundPreview.run()
+        val uri = draft.soundUri?.let(Uri::parse)
+            ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
+        val ringtone = runCatching { RingtoneManager.getRingtone(this, uri) }.getOrNull() ?: return
+        ringtone.audioAttributes = android.media.AudioAttributes.Builder()
+            .setUsage(android.media.AudioAttributes.USAGE_ALARM)
+            .build()
+        runCatching { ringtone.play() }
+        previewRingtone = ringtone
+        binding.root.postDelayed(stopSoundPreview, 5_000)
+    }
+
+    private fun previewMission(mission: Mission, level: Int) {
+        startActivity(
+            Intent(this, RingActivity::class.java)
+                .putExtra(RingActivity.EXTRA_PREVIEW_MISSION, mission.name)
+                .putExtra(RingActivity.EXTRA_PREVIEW_LEVEL, level)
+        )
+    }
+
+    /** Checks exactly [days]; the toggles' own listeners update the draft. */
+    private fun setDays(days: Set<Int>) {
+        for (i in 0 until binding.dayRow.childCount) {
+            val button = binding.dayRow.getChildAt(i) as? MaterialButton ?: continue
+            button.isChecked = button.tag in days
+        }
     }
 
     // ---- Time selector (wheel or clock, per the app setting) ----
@@ -305,6 +461,7 @@ class AlarmEditActivity : AppCompatActivity() {
                 text = symbols[day].take(2)
                 isCheckable = true
                 isChecked = day in draft.days
+                tag = day
                 insetTop = 0
                 insetBottom = 0
                 minWidth = 0
@@ -322,6 +479,18 @@ class AlarmEditActivity : AppCompatActivity() {
                         days = if (checked) draft.days + day else draft.days - day
                     )
                     updateRingsInPreview()
+                }
+                // Long press on any day: the usual sets in one go.
+                setLongPressMenu {
+                    val weekdays = order.take(5).toSet()
+                    listOf(
+                        R.string.weekdays to weekdays,
+                        R.string.weekend to order.drop(5).toSet(),
+                        R.string.every_day to order.toSet(),
+                        R.string.once to emptySet(),
+                    ).filter { it.second != draft.days }.map { (label, days) ->
+                        MenuAction(getString(label)) { setDays(days) }
+                    }
                 }
             }
             binding.dayRow.addView(button)
@@ -457,11 +626,7 @@ class AlarmEditActivity : AppCompatActivity() {
 
         sheet.missionTest.setOnClickListener {
             if (selected == Mission.NONE) return@setOnClickListener
-            startActivity(
-                Intent(this, RingActivity::class.java)
-                    .putExtra(RingActivity.EXTRA_PREVIEW_MISSION, selected.name)
-                    .putExtra(RingActivity.EXTRA_PREVIEW_LEVEL, level)
-            )
+            previewMission(selected, level)
         }
 
         sheet.missionOk.setOnClickListener {

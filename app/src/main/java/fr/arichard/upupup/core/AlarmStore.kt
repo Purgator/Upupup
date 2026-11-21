@@ -82,6 +82,14 @@ class AlarmStore(context: Context) {
             .apply()
     }
 
+    /** Puts back a snooze that was dropped by mistake (undo), with its count. */
+    fun restoreSnooze(id: Long, until: Long, count: Int) {
+        prefs.edit()
+            .putLong("snooze_until_$id", until)
+            .putInt("snooze_count_$id", count)
+            .apply()
+    }
+
     /** Called when the alarm actually fires: the pending snooze time is consumed. */
     fun consumeSnoozeTime(id: Long) {
         val editor = prefs.edit().remove("snooze_until_$id")
