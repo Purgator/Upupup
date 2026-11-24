@@ -4,6 +4,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.color.MaterialColors
 import fr.arichard.upupup.core.Alarm
 import fr.arichard.upupup.core.Format
 import fr.arichard.upupup.core.Mission
@@ -34,6 +35,10 @@ class AlarmAdapter(
     var upcoming: Map<Long, UpcomingState> = emptyMap()
         private set
 
+    /** The alarm that rings next, whose card gets an accent border; null when all are off. */
+    var nextId: Long? = null
+        private set
+
     /** Switch position last drawn per alarm, so a change slides instead of jumping. */
     private val shownStates = mutableMapOf<Long, SwitchState>()
 
@@ -44,9 +49,10 @@ class AlarmAdapter(
         setHasStableIds(true)
     }
 
-    fun submit(list: List<Alarm>, upcoming: Map<Long, UpcomingState>) {
+    fun submit(list: List<Alarm>, upcoming: Map<Long, UpcomingState>, nextId: Long?) {
         alarms = list
         this.upcoming = upcoming
+        this.nextId = nextId
         shownStates.keys.retainAll(list.map { it.id }.toSet())
         @Suppress("NotifyDataSetChanged") // lists are tiny; diffing is not worth it
         notifyDataSetChanged()
@@ -71,8 +77,22 @@ class AlarmAdapter(
     inner class Holder(private val binding: ItemAlarmBinding) :
         RecyclerView.ViewHolder(binding.root) {
 
+        /** The card's own outline, put back when it is not the next one to ring. */
+        private val plainStrokeColor = binding.root.strokeColorStateList
+        private val plainStrokeWidth = binding.root.strokeWidth
+
         fun bind(alarm: Alarm) {
             val context = binding.root.context
+            if (alarm.id == nextId) {
+                binding.root.strokeColor = MaterialColors.getColor(
+                    binding.root, com.google.android.material.R.attr.colorPrimary
+                )
+                binding.root.strokeWidth =
+                    (context.resources.displayMetrics.density * NEXT_STROKE_DP).toInt()
+            } else {
+                if (plainStrokeColor != null) binding.root.setStrokeColor(plainStrokeColor)
+                binding.root.strokeWidth = plainStrokeWidth
+            }
             val switchState = switchState(alarm)
             binding.alarmTime.text =
                 String.format(Locale.ROOT, "%02d:%02d", alarm.hour, alarm.minute)
@@ -178,6 +198,9 @@ class AlarmAdapter(
     }
 
     companion object {
+        private const val NEXT_STROKE_DP = 2
+
+
         fun mathLevelName(context: android.content.Context, level: Int): String =
             context.getString(
                 when (level) {

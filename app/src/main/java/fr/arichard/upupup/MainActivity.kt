@@ -148,11 +148,17 @@ class MainActivity : AppCompatActivity() {
     private fun refreshAlarms() {
         val alarms = store.all()
         adapter.defaultOutput = Prefs(this).defaultOutput
-        adapter.submit(alarms, upcomingStates(alarms))
+        adapter.submit(alarms, upcomingStates(alarms), nextAlarmId(alarms))
         binding.emptyView.visibility =
             if (alarms.isEmpty() && selectedTab == R.id.nav_alarms) View.VISIBLE
             else View.GONE
         updateNextAlarmBanner(alarms)
+    }
+
+    /** The alarm whose ring comes first (its card is outlined), or null when all are off. */
+    private fun nextAlarmId(alarms: List<Alarm>): Long? {
+        val now = System.currentTimeMillis()
+        return alarms.filter { it.enabled }.minByOrNull { store.nextRing(it, now) }?.id
     }
 
     /** Which cards offer to dismiss (or restore) their next ring right now. */
@@ -389,7 +395,8 @@ class MainActivity : AppCompatActivity() {
         val now = System.currentTimeMillis()
         // The ticker gets here every second: let cards enter or leave the "rings soon"
         // window (and lose an elapsed snooze) without waiting for the next resume.
-        if (upcomingStates(alarms) != adapter.upcoming) {
+        // The outlined "next to ring" card follows the same clock.
+        if (upcomingStates(alarms) != adapter.upcoming || nextAlarmId(alarms) != adapter.nextId) {
             refreshAlarms()
             return
         }
